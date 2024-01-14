@@ -1,0 +1,24 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+SERVICE_DAEMONIZE=1
+SERVICE_WRITE_PID=1
+USE_PROCD=1
+#获取目录
+DIR=/etc/nftclash
+CLASH_HOME_DIR=$DIR/clash
+
+start_service() {
+    $DIR/service.sh init_startup
+	if [ "$?" = "0" ]; then
+		procd_open_instance
+		procd_set_param respawn
+		procd_set_param stderr 0
+		procd_set_param stdout 0
+		procd_set_param command $CLASH_HOME_DIR/clash -d $CLASH_HOME_DIR
+		procd_set_param user nftclash
+		procd_close_instance
+        $DIR/service.sh init_started
+	fi
+}
