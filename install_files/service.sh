@@ -281,6 +281,11 @@ init_fw() {
 	nft flush table inet nftclash
 	nft add chain inet nftclash prerouting { type filter hook prerouting priority 0 \; }
 
+	ip rule add fwmark $fwmark table 100
+	ip route add local default dev lo table 100
+	ip -6 rule add fwmark $fwmark table 101
+	ip -6 route add local ::/0 dev lo table 101
+
 	RESERVED_IP="$(echo $reserve_ipv4 | sed 's/ /, /g')"
 	RESERVED_IP6="$(echo $reserve_ipv6 | sed 's/ /, /g')"
 	nft add rule inet nftclash prerouting ip daddr {$RESERVED_IP} return
