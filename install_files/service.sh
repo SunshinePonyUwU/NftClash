@@ -12,8 +12,8 @@ CLASH_HOME_DIR=$DIR/clash
 CONFIG_PATH=$DIR/config.cfg
 VERSION_PATH=$DIR/version
 
-FILES_REPO_URL="https://ghproxy.projects.20percent.cool/https://raw.githubusercontent.com/SunshinePonyUwU/NftClashFiles/main"
-REPO_URL="https://ghproxy.projects.20percent.cool/https://raw.githubusercontent.com/SunshinePonyUwU/NftClash/main"
+FILES_REPO_URL="https://raw.githubusercontent.com/SunshinePonyUwU/NftClashFiles/main"
+REPO_URL="https://raw.githubusercontent.com/SunshinePonyUwU/NftClash/main"
 
 reserve_ipv4="0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 100.64.0.0/10 169.254.0.0/16 172.16.0.0/12 192.168.0.0/16 224.0.0.0/4 240.0.0.0/4"
 reserve_ipv6="::/128 ::1/128 ::ffff:0:0/96 64:ff9b::/96 100::/64 2001::/32 2001:20::/28 2001:db8::/32 2002::/16 fc00::/7 fe80::/10 ff00::/8"
