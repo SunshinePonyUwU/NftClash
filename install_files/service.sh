@@ -97,10 +97,14 @@ clash_api_get(){
 
 clash_api_put(){
 	if [ "$CLASH_API_AVAILABLE" = 1 ]; then
-		curl -sS -X PUT -H "Authorization: Bearer ${clash_api_secret}" -H "Content-Type:application/json" "$1" -d "$2" &> /dev/null
+		curl -sS -X PUT -H "Authorization: Bearer ${clash_api_secret}" -H "Content-Type:application/json" "$1" -d "$2"
 	else
 		echo -e "${RED}Clash Api is not available!!!${NOCOLOR}"
 	fi
+}
+
+clash_api_version() {
+	clash_version=$(clash_api_get http://127.0.0.1:${clash_api_port}/version | jq -r .version)
 }
 
 clash_api_config_save() {
@@ -121,7 +125,7 @@ clash_api_config_restore() {
 	while [ "$i" -le "$num" ];do
 		group_name=$(awk -F ',' 'NR=="'${i}'" {print $1}' $DIR/proxies | sed 's/ /%20/g')
 		now_name=$(awk -F ',' 'NR=="'${i}'" {print $2}' $DIR/proxies)
-		clash_api_put http://127.0.0.1:${clash_api_port}/proxies/${group_name} "{\"name\":\"${now_name}\"}"
+		clash_api_put http://127.0.0.1:${clash_api_port}/proxies/${group_name} "{\"name\":\"${now_name}\"}" &> /dev/null
 		i=$((i+1))
 	done
 }
@@ -423,6 +427,10 @@ init_startup() {
 		echo -e "${RED}You need to install yq!!!${NOCOLOR}"
 		exit 1
 	fi
+	if ! command -v jq >/dev/null 2>&1; then
+		echo -e "${RED}You need to install jq!!!${NOCOLOR}"
+		exit 1
+	fi
 	if [ -e "$CLASH_HOME_DIR/clash" ]; then
 		if [ -e "$CLASH_HOME_DIR/config.yaml" ]; then
 			chmod 777 -R "$DIR"
@@ -466,9 +474,10 @@ init_started() {
 	fi
 	init_config
 	init_fw
-	echo -e "${BLUE}WAITTING FOR CLASH API${NOCOLOR}"
+	echo -e "${YELLOW}WAITTING FOR CLASH API${NOCOLOR}"
 	clash_api_config_restore
-	echo -e "${GREEN}Clash Api started at ${YELLOW}http://${host_ipv4}:${clash_api_port}${NOCOLOR}"
+	clash_api_version
+	echo -e "${GREEN}API_URL: ${YELLOW}http://${host_ipv4}:${clash_api_port} ${GREEN}API_VERSION: ${YELLOW}${clash_version}${NOCOLOR}"
 	add_crontab
 	echo -e "${BLUE}CLASH SERVICE STARTED${NOCOLOR}"
 }
