@@ -15,6 +15,14 @@
 --
 使用nftables的OpenWrt系統（23版本以上）
 
+安裝方式：
+--
+1.下載源代碼
+2.解壓 install_files 文件夾的内容到 /etc/nftclash/install 文件夾下
+3.設置 /etc/nftclash 文件夾權限為 777
+4.執行 /etc/nftclash/install/install.sh
+5.執行 service nftclash start 啓動clash服務
+
 功能配置：
 --
 | 選項 | 默認值 | 可接受的值 | 描述 |
