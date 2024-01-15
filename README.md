@@ -23,6 +23,12 @@
 4.執行 /etc/nftclash/install/install.sh  
 5.執行 service nftclash start 啓動 clash 服務  
 
+檢查更新：
+--
+```shell
+/etc/nftclash/service.sh check_update
+```
+
 功能配置：
 --
 | 選項 | 默認值 | 可接受的值 | 描述 |
