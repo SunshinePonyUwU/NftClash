@@ -10,8 +10,10 @@ TMPDIR=/tmp/nftclash
 CLASH_HOME_DIR=$DIR/clash
 
 CONFIG_PATH=$DIR/config.cfg
+VERSION_PATH=$DIR/version
 
 FILES_REPO_URL="https://ghproxy.projects.20percent.cool/https://raw.githubusercontent.com/SunshinePonyUwU/NftClashFiles/main"
+REPO_URL="https://ghproxy.projects.20percent.cool/https://raw.githubusercontent.com/SunshinePonyUwU/NftClash/main"
 
 reserve_ipv4="0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 100.64.0.0/10 169.254.0.0/16 172.16.0.0/12 192.168.0.0/16 224.0.0.0/4 240.0.0.0/4"
 reserve_ipv6="::/128 ::1/128 ::ffff:0:0/96 64:ff9b::/96 100::/64 2001::/32 2001:20::/28 2001:db8::/32 2002::/16 fc00::/7 fe80::/10 ff00::/8"
@@ -87,6 +89,19 @@ init_config() {
 	init_clash_api
 }
 
+# LINK, PATH
+download_file() {
+	wget -O "$2" "$1"
+}
+
+fetch_files_repo(){
+	curl -s -H "$FILES_REPO_URL$1"
+}
+
+fetch_repo(){
+	curl -s -H "$REPO_URL$1"
+}
+
 clash_api_get(){
 	if [ "$CLASH_API_AVAILABLE" = 1 ]; then
 		curl -s -H "Authorization: Bearer ${clash_api_secret}" -H "Content-Type:application/json" "$1"
@@ -146,6 +161,77 @@ init_clash_api() {
 	else
 		echo -e "${RED}You need to install curl!!!${NOCOLOR}"
 		CLASH_API_AVAILABLE=0
+	fi
+}
+
+check_update() {
+	
+	if [ -e "$VERSION_PATH" ]; then
+		source $VERSION_PATH
+		[ -z "$VERSION_SERVICE" ] && {
+			echo -e "${RED}version info is missing!!!${NOCOLOR}"
+			exit 1
+		}
+	else
+		echo -e "${RED}version file is missing!!!${NOCOLOR}"
+		exit 1
+	fi
+	update_data=$(fetch_files_repo "/update.json")
+	[ -z "$update_data" ] && {
+		echo -e "${RED}UPDATE CHECK FAILED!!!${NOCOLOR}"
+		exit 1
+	}
+	latest_service_version=$(echo "$update_data" | jq .service_version)
+	latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
+	if [ $VERSION_SERVICE -eq $latest_service_version ]; then
+		echo -e "${GREEN}SERVICE SCRIPT IS UP TO DATE${NOCOLOR}"
+	else
+		echo -e "${YELLOW}SERVICE SCRIPT HAVE AN UPDATE${NOCOLOR}"
+		read -p "Do you want update right now? [y|N]" ReadLine
+		case "$ReadLine" in
+			"y")
+				echo "Removing old install files."
+				rm -f "$DIR/install/*"
+				download_file "$REPO_URL/install_files/install.sh" "$DIR/install/install.sh"
+				download_file "$REPO_URL/install_files/nftclashservice" "$DIR/install/nftclashservice"
+				download_file "$REPO_URL/install_files/service.sh" "$DIR/install/service.sh"
+				chmod 777 -R "$DIR/install/"
+				$DIR/install/install.sh
+				set_config VERSION_SERVICE "$latest_service_version" "$VERSION_PATH"
+				;;
+		esac
+	fi
+	if [ "$BYPASS_CN_IP_ENABLED" = 1 ]; then
+		if [ ! -z "$VERSION_CHINA_IPLIST"]; then
+			if [ $VERSION_CHINA_IPLIST -eq $latest_china_iplist_version ]; then
+				echo -e "${GREEN}CHINA IP LIST IS UP TO DATE${NOCOLOR}"
+			else
+				echo -e "${YELLOW}CHINA IP LIST HAVE AN UPDATE${NOCOLOR}"
+				read -p "Do you want update right now? [y|N]" ReadLine
+				case "$ReadLine" in
+					"y")
+						echo "Removing old china ip list"
+						rm -f "$DIR/ipset/china_ip_list.txt"
+						rm -f "$DIR/ipset/china_ipv6_list.txt"
+						download_file "$FILES_REPO_URL/china_ip_list.txt" "$DIR/ipset/china_ip_list.txt"
+						download_file "$FILES_REPO_URL/china_ipv6_list.txt" "$DIR/ipset/china_ipv6_list.txt"
+						chmod 777 "$DIR/ipset/china_ip_list.txt"
+						chmod 777 "$DIR/ipset/china_ipv6_list.txt"
+						set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
+						nft list set inet nftclash cn_ip &> /dev/null && {
+							echo -e "${BLUE}UPDATE CHINA IP SET${NOCOLOR}"
+							nft flush set nftclash cn_ip
+							nft add element inet nftclash cn_ip {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")}
+						}
+						nft list set inet nftclash cn_ip6 &> /dev/null && {
+							echo -e "${BLUE}UPDATE CHINA IPV6 SET${NOCOLOR}"
+							nft flush set nftclash cn_ip6
+							nft add element inet nftclash cn_ip6 {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")}
+						}
+						;;
+				esac
+			fi
+		fi
 	fi
 }
 
@@ -476,7 +562,7 @@ init_started() {
 	init_fw
 	echo -e "${YELLOW}WAITTING FOR CLASH API${NOCOLOR}"
 	clash_api_config_restore
-	echo -e "${GREEN}API_URL: ${YELLOW}http://${host_ipv4}:${clash_api_port}${NOCOLOR}"
+	echo -e "${GREEN}API_URL: ${NOCOLOR}http://${host_ipv4}:${clash_api_port}${NOCOLOR}"
 	add_crontab
 	echo -e "${BLUE}CLASH SERVICE STARTED${NOCOLOR}"
 }
