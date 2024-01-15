@@ -38,8 +38,8 @@
 
 DNS配置：
 --
-#### 如果你不需要使用黑白名單模式，也需要使用dnsmasq。
-1.關閉DNS_REDIRECT
+#### 如果你需要使用dnsmasq作爲默認dns
+1.關閉DNS_REDIRECT  
 2.在 網絡 -> DHCP/DNS -> HOSTS和解析文件 中勾選 忽略解析文件  
 3.在 網絡 -> DHCP/DNS -> 常規設置 中設置 DNS 轉發 填寫 127.0.0.1:1053 。(1053是你配置文件中填寫的dns端口)  
 這個方法會把dnsmasq的上游設置成Clash DNS，但是會讓局域網内所有客戶端都使用Clash DNS  
