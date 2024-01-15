@@ -1,6 +1,6 @@
 Nft Clash
 <h1 align="center">
-  <img src="https://github.com/SunshinePonyUwU/NftClash/raw/master/logo.png" alt="Clash" width="200">
+  <img src="https://github.com/SunshinePonyUwU/NftClash/blob/main/logo.png?raw=true" alt="Clash" width="200">
   <br>Nft Clash<br>
 </h1>
 使用NFT實現透明代理的Clash客戶端
@@ -22,7 +22,7 @@ Nft Clash
 | :- | :- | :- | :- |
 | DNS_REDIRECT | 0 | 0,1 | 啓用DNS重定向 |
 | PROXY_COMMON_PORT_ENABLED | 0 | 0,1 | 僅代理常用端口 |
-| PROXY_COMMON_PORT_LIST | "22,53,80,123,143,194,443,465,587,853,993,995,5222,8080,8443" | "PORT,PORT,PORT,..." | 常用端口列表 |
+| PROXY_COMMON_PORT_LIST | "22,53,80,..." | "PORT,PORT,PORT,..." | 常用端口列表 |
 | BYPASS_CN_IP_ENABLED | 1 | 0,1 | 啓用繞過中國大陸IP |
 | BYPASS_PASS_IP_ENABLED | 1 | 0,1 | 啓用繞過指定IP |
 | FORCE_PROXY_IP_ENABLED | 1 | 0,1 | 啓用代理指定IP |
