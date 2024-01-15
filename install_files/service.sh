@@ -5,7 +5,12 @@ CLASH_HOME_DIR=$DIR/clash
 CONFIG_PATH=$DIR/config.cfg
 
 init_config() {
-  # source $CONFIG_PATH
+	if [ -e "$CONFIG_PATH" ]; then
+		source $CONFIG_PATH
+	else
+		echo "Creating config.cfg"
+
+	fi
 	tproxy_port=$(awk -F': ' '/tproxy-port/{print $2}' "$CLASH_HOME_DIR/config.yaml")
 	redir_port=$(awk -F': ' '/redir-port/{print $2}' "$CLASH_HOME_DIR/config.yaml")
 	fwmark=$redir_port
