@@ -34,3 +34,4 @@
 | BYPASS_PASS_IP_ENABLED | 1 | 0,1 | 啓用繞過指定IP |
 | FORCE_PROXY_IP_ENABLED | 1 | 0,1 | 啓用代理指定IP |
 | MAC_LIST_MODE | 0 | 0,1,2 | 0:禁用功能,1:MAC白名單模式,2:MAC黑名單模式 |
+| LOCAL_PROXY_IPV6 | 0 | 0,1 | 是否代理本機IPV6，和繞過中國大陸IP一起使用避免回環 |

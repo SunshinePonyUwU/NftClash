@@ -52,6 +52,7 @@ init_config() {
 		set_config BYPASS_PASS_IP_ENABLED 1
 		set_config FORCE_PROXY_IP_ENABLED 1
 		set_config MAC_LIST_MODE 0
+		set_config LOCAL_PROXY_IPV6 0
 		source $CONFIG_PATH
 	fi
 
@@ -62,6 +63,7 @@ init_config() {
 	[ -z "$BYPASS_PASS_IP_ENABLED" ] && BYPASS_PASS_IP_ENABLED=1
 	[ -z "$FORCE_PROXY_IP_ENABLED" ] && FORCE_PROXY_IP_ENABLED=1
 	[ -z "$MAC_LIST_MODE" ] && MAC_LIST_MODE=0
+	[ -z "$LOCAL_PROXY_IPV6" ] && LOCAL_PROXY_IPV6=0
 
 	get_clash_config tproxy_port tproxy-port
 	get_clash_config redir_port redir-port
@@ -384,6 +386,8 @@ init_fw() {
 	[ "$BYPASS_PASS_IP_ENABLED" = 1 ] && nft add rule inet nftclash output ip6 daddr @pass_ip6 return
 	[ "$BYPASS_CN_IP_ENABLED" = 1 ] && nft add rule inet nftclash output ip daddr @cn_ip return
 	[ "$BYPASS_CN_IP_ENABLED" = 1 ] && nft add rule inet nftclash output ip6 daddr @cn_ip6 return
+
+	[ "$LOCAL_PROXY_IPV6" = 0 ] && nft add rule inet nftclash output meta nfproto ipv6 return
 
 	nft add rule inet nftclash output meta l4proto tcp mark set $fwmark redirect to $redir_port
 }
