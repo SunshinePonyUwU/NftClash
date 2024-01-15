@@ -30,12 +30,15 @@ init_startup() {\
 			echo "INIT STARTUP DONE!"
 		else
 			echo "Please manually move the clash config file to $CLASH_HOME_DIR/config.yaml"
+			exit 1
 		fi
 	else
 		echo "clash file does not exist!!!"
 		if [ ! -d "$CLASH_HOME_DIR" ]; then
 			echo "Creating directory"
 			mkdir -p "$CLASH_HOME_DIR"
+			echo "Please manually restart service!"
+			exit 1
 		fi
 		echo "Please manually move the clash executable file to $CLASH_HOME_DIR/clash"
 		exit 1
