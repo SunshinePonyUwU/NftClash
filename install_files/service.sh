@@ -341,6 +341,14 @@ init_fw_dns() {
 		if [ -z "$dns_listen_ip" ] || [ "$dns_listen_ip" == "0.0.0.0" ]; then
 			echo "INIT DNS REDIRECT"
 			nft add chain inet nftclash dns { type nat hook prerouting priority -100 \; }
+			case $MAC_LIST_MODE in
+			1)  # White List Mode
+				nft add rule inet nftclash dns ether saddr != @ether_list return
+				;;
+			2)  # Black List Mode
+				nft add rule inet nftclash dns ether saddr @ether_list return
+				;;
+			esac
 			nft add rule inet nftclash dns udp dport 53 redirect to ${dns_listen_port}
 			nft add rule inet nftclash dns tcp dport 53 redirect to ${dns_listen_port}
 		else
