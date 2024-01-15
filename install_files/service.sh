@@ -37,15 +37,17 @@ init_config() {
 		set_config BYPASS_CN_IP_ENABLED 1
 		set_config BYPASS_PASS_IP_ENABLED 1
 		set_config FORCE_PROXY_IP_ENABLED 1
+		set_config MAC_LIST_MODE 0
 		source $CONFIG_PATH
 	fi
 
 	[ -z "$DNS_REDIRECT" ] && DNS_REDIRECT=0
 	[ -z "$PROXY_COMMON_PORT_ENABLED" ] && PROXY_COMMON_PORT_ENABLED=0
 	[ -z "$PROXY_COMMON_PORT_LIST" ] && PROXY_COMMON_PORT_LIST="22,53,80,123,143,194,443,465,587,853,993,995,5222,8080,8443"
-	[ -z "$BYPASS_CN_IP_ENABLED" ] && BYPASS_CN_IP_ENABLED=0
+	[ -z "$BYPASS_CN_IP_ENABLED" ] && BYPASS_CN_IP_ENABLED=1
 	[ -z "$BYPASS_PASS_IP_ENABLED" ] && BYPASS_PASS_IP_ENABLED=1
 	[ -z "$FORCE_PROXY_IP_ENABLED" ] && FORCE_PROXY_IP_ENABLED=1
+	[ -z "$MAC_LIST_MODE" ] && MAC_LIST_MODE=0
 
 	get_clash_config tproxy_port tproxy-port
 	get_clash_config redir_port redir-port
@@ -56,55 +58,194 @@ init_config() {
 	
 }
 
+init_mac_list() {
+	case $MAC_LIST_MODE in
+	1)  # White List Mode
+		[ ! -e "$DIR/ruleset/ether_white_list.txt" ] && touch "$DIR/ruleset/ether_white_list.txt"
+		init_mac_white_list
+		;;
+	2)  # Black List Mode
+		[ ! -e "$DIR/ruleset/ether_black_list.txt" ] && touch "$DIR/ruleset/ether_black_list.txt"
+		init_mac_black_list
+		;;
+	esac
+}
+
+init_mac_white_list() {
+	echo "INIT MAC_WHITE_LIST"
+	nft add set inet nftclash ether_list { type ether_addr\; } && \
+	nft add rule inet nftclash prerouting ether saddr != @ether_list return
+	if [ -n "$(grep -v '^$' "$DIR/ruleset/ether_white_list.txt")" ]; then
+		MAC_WHITE_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/ether_white_list.txt")
+		nft add element inet nftclash ether_list {$MAC_WHITE_LIST}
+	else
+		echo "ether_white_list.txt is empty, you can edit by your self."
+	fi
+}
+
+init_mac_black_list() {
+	echo "INIT MAC_BLACK_LIST"
+	nft add set inet nftclash ether_list { type ether_addr\; } && \
+	nft add rule inet nftclash prerouting ether saddr @ether_list return
+	if [ -n "$(grep -v '^$' "$DIR/ruleset/ether_black_list.txt")" ]; then
+		MAC_BLACK_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/ether_black_list.txt")
+		nft add element inet nftclash ether_list {$MAC_BLACK_LIST}
+	else
+		echo "ether_black_list.txt is empty, you can edit by your self."
+	fi
+}
+
+init_force_proxy_ip() {
+	echo "INIT FORCE PROXY_IP"
+	nft add set inet nftclash proxy_ip { type ipv4_addr\; flags interval\; } && \
+	if [ -n "$(grep -v '^$' "$DIR/ipset/proxy_ip_list.txt")" ]; then
+		PROXY_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/proxy_ip_list.txt")
+		nft add element inet nftclash proxy_ip {$PROXY_IP}
+	else
+		echo "proxy_ip_list.txt is empty, you can edit by your self."
+	fi
+}
+
+init_force_proxy_ipv6() {
+	echo "INIT FORCE PROXY_IP6"
+	nft add set inet nftclash proxy_ip6 { type ipv6_addr\; flags interval\; } && \
+	if [ -n "$(grep -v '^$' "$DIR/ipset/proxy_ipv6_list.txt")" ]; then
+		PROXY_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/proxy_ipv6_list.txt")
+		nft add element inet nftclash proxy_ip6 {$PROXY_IP6}
+	else
+		echo "proxy_ipv6_list.txt is empty, you can edit by your self."
+	fi
+}
+
+init_pass_ip_bypass() {
+	echo "INIT PASS_IP BYPASS"
+	nft add set inet nftclash pass_ip { type ipv4_addr\; flags interval\; } && \
+	if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
+		nft add rule inet nftclash prerouting ip daddr @pass_ip ip daddr != @proxy_ip return
+	else
+		nft add rule inet nftclash prerouting ip daddr @pass_ip return
+	fi
+	if [ -n "$(grep -v '^$' "$DIR/ipset/pass_ip_list.txt")" ]; then
+		PASS_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/pass_ip_list.txt")
+		nft add element inet nftclash pass_ip {$PASS_IP}
+	else
+		echo "pass_ip_list.txt is empty, you can edit by your self."
+	fi
+}
+
+init_pass_ipv6_bypass() {
+	echo "INIT PASS_IP6 BYPASS"
+	nft add set inet nftclash pass_ip6 { type ipv6_addr\; flags interval\; } && \
+	if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
+		nft add rule inet nftclash prerouting ip6 daddr @pass_ip6 ip6 daddr != @proxy_ip6 return
+	else
+		nft add rule inet nftclash prerouting ip6 daddr @pass_ip6 return
+	fi
+	if [ -n "$(grep -v '^$' "$DIR/ipset/pass_ipv6_list.txt")" ]; then
+		PASS_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/pass_ipv6_list.txt")
+		nft add element inet nftclash pass_ip6 {$PASS_IP6}
+	else
+		echo "pass_ipv6_list.txt is empty, you can edit by your self."
+	fi
+}
+
 init_cn_ip_bypass() {
-	if [ -n "$(grep -v '^$' "$DIR/china_ip_list.txt")" ]; then
+	if [ -n "$(grep -v '^$' "$DIR/ipset/china_ip_list.txt")" ]; then
 		echo "INIT CN_IP BYPASS"
-		CN_IP=$(awk '{printf "%s, ",$1}' "$DIR/china_ip_list.txt")
+		CN_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")
 		nft add set inet nftclash cn_ip { type ipv4_addr\; flags interval\; } && \
 		nft add element inet nftclash cn_ip {$CN_IP} && \
-		nft add rule inet nftclash prerouting ip daddr @cn_ip return
+		if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
+			nft add rule inet nftclash prerouting ip daddr @cn_ip ip daddr != @proxy_ip return
+		else
+			nft add rule inet nftclash prerouting ip daddr @cn_ip return
+		fi
 	else
 		echo "china_ip_list.txt is empty!!!"
-		rm -f "$DIR/china_ip_list.txt"
+		rm -f "$DIR/ipset/china_ip_list.txt"
 	fi
 }
 
 init_cn_ipv6_bypass() {
-	if [ -n "$(grep -v '^$' "$DIR/china_ipv6_list.txt")" ]; then
+	if [ -n "$(grep -v '^$' "$DIR/ipset/china_ipv6_list.txt")" ]; then
 		echo "INIT CN_IP6 BYPASS"
-		CN_IP6=$(awk '{printf "%s, ",$1}' "$DIR/china_ipv6_list.txt")
+		CN_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")
 		nft add set inet nftclash cn_ip6 { type ipv6_addr\; flags interval\; } && \
 		nft add element inet nftclash cn_ip6 {$CN_IP6} && \
-		nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 return
+		if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
+			nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 ip6 daddr != @proxy_ip6 return
+		else
+			nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 return
+		fi
 	else
 		echo "china_ipv6_list.txt is empty!!!"
-		rm -f "$DIR/china_ipv6_list.txt"
+		rm -f "$DIR/ipset/china_ipv6_list.txt"
 	fi
 }
 
 init_fw_bypass() {
+	if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
+		# IPv4 Rules
+		if [ -e "$DIR/ipset/proxy_ip_list.txt" ]; then
+			init_force_proxy_ip
+		else
+			echo "proxy_ip_list.txt does not exist!!!"
+			echo "Creating proxy_ip_list.txt"
+			touch "$DIR/ipset/proxy_ip_list.txt"
+			init_force_proxy_ip
+		fi
+		# IPv6 Rules
+		if [ -e "$DIR/ipset/proxy_ipv6_list.txt" ]; then
+			init_force_proxy_ipv6
+		else
+			echo "proxy_ipv6_list.txt does not exist!!!"
+			echo "Creating proxy_ipv6_list.txt"
+			touch "$DIR/ipset/proxy_ipv6_list.txt"
+			init_force_proxy_ipv6
+		fi
+	fi
+	if [ "$BYPASS_PASS_IP_ENABLED" = 1 ]; then
+		# IPv4 Rules
+		if [ -e "$DIR/ipset/pass_ip_list.txt" ]; then
+			init_pass_ip_bypass
+		else
+			echo "pass_ip_list.txt does not exist!!!"
+			echo "Creating pass_ip_list.txt"
+			touch "$DIR/ipset/pass_ip_list.txt"
+			init_pass_ip_bypass
+		fi
+		# IPv6 Rules
+		if [ -e "$DIR/ipset/pass_ipv6_list.txt" ]; then
+			init_pass_ipv6_bypass
+		else
+			echo "pass_ipv6_list.txt does not exist!!!"
+			echo "Creating pass_ipv6_list.txt"
+			touch "$DIR/ipset/pass_ipv6_list.txt"
+			init_pass_ipv6_bypass
+		fi
+	fi
 	if [ "$BYPASS_CN_IP_ENABLED" = 1 ]; then
 		# IPv4 Rules
-		if [ -e "$DIR/china_ip_list.txt" ]; then
+		if [ -e "$DIR/ipset/china_ip_list.txt" ]; then
 			init_cn_ip_bypass
 		else
 			echo "china_ip_list.txt does not exist!!!"
-			wget -O "$DIR/china_ip_list.txt" "$FILES_REPO_URL/china_ip_list.txt"
+			wget -O "$DIR/ipset/china_ip_list.txt" "$FILES_REPO_URL/china_ip_list.txt"
 			if [ "$?" = "0" ]; then
-				chmod 777 "$DIR/china_ip_list.txt"
+				chmod 777 "$DIR/ipset/china_ip_list.txt"
 				init_cn_ip_bypass
 			else
 				echo "china_ip_list.txt download failed!!!"
 			fi
 		fi
 		# IPv6 Rules
-		if [ -e "$DIR/china_ipv6_list.txt" ]; then
+		if [ -e "$DIR/ipset/china_ipv6_list.txt" ]; then
 			init_cn_ipv6_bypass
 		else
 			echo "china_ipv6_list.txt does not exist!!!"
-			wget -O "$DIR/china_ipv6_list.txt" "$FILES_REPO_URL/china_ipv6_list.txt"
+			wget -O "$DIR/ipset/china_ipv6_list.txt" "$FILES_REPO_URL/china_ipv6_list.txt"
 			if [ "$?" = "0" ]; then
-				chmod 777 "$DIR/china_ipv6_list.txt"
+				chmod 777 "$DIR/ipset/china_ipv6_list.txt"
 				init_cn_ipv6_bypass
 			else
 				echo "china_ipv6_list.txt download failed!!!"
@@ -140,6 +281,8 @@ init_fw() {
 	RESERVED_IP6="$(echo $reserve_ipv6 | sed 's/ /, /g')"
 	nft add rule inet nftclash prerouting ip daddr {$RESERVED_IP} return
 	nft add rule inet nftclash prerouting ip6 daddr {$RESERVED_IP6} return
+
+	init_mac_list
 
 	[ "$PROXY_COMMON_PORT_ENABLED" = 1 ] && {
 		COMMON_PORT_LIST=$(echo $PROXY_COMMON_PORT_LIST | sed 's/,/, /g')
@@ -187,6 +330,12 @@ init_startup() {
 }
 
 init_started() {
+	if [ ! -d "$DIR/ipset" ]; then
+			mkdir -p "$DIR/ipset"
+	fi
+	if [ ! -d "$DIR/ruleset" ]; then
+			mkdir -p "$DIR/ruleset"
+	fi
 	init_config
 	init_fw
 }
