@@ -5,7 +5,7 @@ CLASH_HOME_DIR=$DIR/clash
 
 CONFIG_PATH=$DIR/config.cfg
 
-FILES_REPO_URL="https://raw.githubusercontent.com/SunshinePonyUwU/NftClashFiles/main"
+FILES_REPO_URL="https://ghproxy.projects.20percent.cool/https://raw.githubusercontent.com/SunshinePonyUwU/NftClashFiles/main"
 
 reserve_ipv4="0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 100.64.0.0/10 169.254.0.0/16 172.16.0.0/12 192.168.0.0/16 224.0.0.0/4 240.0.0.0/4"
 reserve_ipv6="::/128 ::1/128 ::ffff:0:0/96 64:ff9b::/96 100::/64 2001::/32 2001:20::/28 2001:db8::/32 2002::/16 fc00::/7 fe80::/10 ff00::/8"
@@ -22,6 +22,13 @@ compare(){
 	else
 		[ "$(cat $1)" = "$(cat $2)" ] && return 0 || return 1
 	fi
+}
+
+add_crontab() {
+	crontab -l > $TMPDIR/crontab_tmp
+	grep -q "/etc/nftclash/service.sh api_config_save" $TMPDIR/crontab_tmp || echo "*/10 * * * * pgrep clash && /etc/nftclash/service.sh api_config_save" >> $TMPDIR/crontab_tmp
+	crontab $TMPDIR/crontab_tmp
+	rm $TMPDIR/crontab_tmp
 }
 
 get_clash_config() {
@@ -445,6 +452,7 @@ init_started() {
 	init_config
 	init_fw
 	clash_api_config_restore
+	add_crontab
 	echo "Clash Service Started!!!"
 }
 
