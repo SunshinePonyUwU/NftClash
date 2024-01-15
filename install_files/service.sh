@@ -254,8 +254,6 @@ init_mac_white_list() {
 	if [ -n "$(grep -v '^$' "$DIR/ruleset/ether_white_list.txt")" ]; then
 		MAC_WHITE_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/ether_white_list.txt")
 		nft add element inet nftclash ether_list {$MAC_WHITE_LIST}
-	else
-		echo "ether_white_list.txt is empty, you can edit by your self."
 	fi
 }
 
@@ -266,8 +264,6 @@ init_mac_black_list() {
 	if [ -n "$(grep -v '^$' "$DIR/ruleset/ether_black_list.txt")" ]; then
 		MAC_BLACK_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/ether_black_list.txt")
 		nft add element inet nftclash ether_list {$MAC_BLACK_LIST}
-	else
-		echo "ether_black_list.txt is empty, you can edit by your self."
 	fi
 }
 
@@ -277,8 +273,6 @@ init_force_proxy_ip() {
 	if [ -n "$(grep -v '^$' "$DIR/ipset/proxy_ip_list.txt")" ]; then
 		PROXY_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/proxy_ip_list.txt")
 		nft add element inet nftclash proxy_ip {$PROXY_IP}
-	else
-		echo "proxy_ip_list.txt is empty, you can edit by your self."
 	fi
 }
 
@@ -288,8 +282,6 @@ init_force_proxy_ipv6() {
 	if [ -n "$(grep -v '^$' "$DIR/ipset/proxy_ipv6_list.txt")" ]; then
 		PROXY_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/proxy_ipv6_list.txt")
 		nft add element inet nftclash proxy_ip6 {$PROXY_IP6}
-	else
-		echo "proxy_ipv6_list.txt is empty, you can edit by your self."
 	fi
 }
 
@@ -304,8 +296,6 @@ init_pass_ip_bypass() {
 	if [ -n "$(grep -v '^$' "$DIR/ipset/pass_ip_list.txt")" ]; then
 		PASS_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/pass_ip_list.txt")
 		nft add element inet nftclash pass_ip {$PASS_IP}
-	else
-		echo "pass_ip_list.txt is empty, you can edit by your self."
 	fi
 }
 
@@ -320,8 +310,6 @@ init_pass_ipv6_bypass() {
 	if [ -n "$(grep -v '^$' "$DIR/ipset/pass_ipv6_list.txt")" ]; then
 		PASS_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/pass_ipv6_list.txt")
 		nft add element inet nftclash pass_ip6 {$PASS_IP6}
-	else
-		echo "pass_ipv6_list.txt is empty, you can edit by your self."
 	fi
 }
 
