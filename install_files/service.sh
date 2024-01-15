@@ -1,5 +1,6 @@
 
 DIR=/etc/nftclash
+TMPDIR=/tmp/nftclash
 CLASH_HOME_DIR=$DIR/clash
 
 CONFIG_PATH=$DIR/config.cfg
@@ -13,6 +14,16 @@ check_command() {
 	command -v sh &>/dev/null && command -v $1 &>/dev/null || type $1 &>/dev/null
 }
 
+compare(){
+	if [ ! -f $1 -o ! -f $2 ];then
+		return 1
+	elif check_command cmp;then
+		cmp -s $1 $2
+	else
+		[ "$(cat $1)" = "$(cat $2)" ] && return 0 || return 1
+	fi
+}
+
 get_clash_config() {
 	[ -z "$3" ] && configpath="$CLASH_HOME_DIR/config.yaml" || configpath=$3
 	if [ -e "$configpath" ]; then
@@ -23,7 +34,6 @@ get_clash_config() {
 }
 
 set_config() {
-	#参数1代表变量名，参数2代表变量值,参数3即文件路径
 	[ -z "$3" ] && configpath=$CONFIG_PATH || configpath=$3
 	[ -n "$(grep -E "^${1}=" $configpath)" ] && sed -i "s#^${1}=\(.*\)#${1}=${2}#g" $configpath || echo "${1}=${2}" >> $configpath
 }
@@ -58,8 +68,65 @@ init_config() {
 	fwmark=$redir_port
 	get_clash_config clash_dns_enabled dns.enable
 	get_clash_config clash_dns_listen dns.listen
+	init_clash_api
+}
 
-	
+clash_api_get(){
+	if [ "$CLASH_API_AVAILABLE" = 1 ]; then
+		curl -s -H "Authorization: Bearer ${clash_api_secret}" -H "Content-Type:application/json" "$1"
+	else
+		echo "Clash Api is not available!!!"
+	fi
+}
+
+clash_api_put(){
+	if [ "$CLASH_API_AVAILABLE" = 1 ]; then
+		curl -sS -X PUT -H "Authorization: Bearer ${clash_api_secret}" -H "Content-Type:application/json" "$1" -d "$2" &> /dev/null
+	else
+		echo "Clash Api is not available!!!"
+	fi
+}
+
+clash_api_config_save() {
+	clash_api_get http://127.0.0.1:${clash_api_port}/proxies | awk -F ':\\{"' '{for(i=1;i<=NF;i++) print $i}' | grep -aE '(^all|^alive)".*"Selector"' > $TMPDIR/clash_api_proxies
+	compare $TMPDIR/clash_api_proxies $DIR/proxies
+	[ "$?" = 0 ] && rm -f $TMPDIR/clash_api_proxies || mv -f $TMPDIR/clash_api_proxies $DIR/proxies
+}
+
+clash_api_config_restore() {
+	i=1
+	while [ -z "$test" -a "$i" -lt 20 ];do
+		sleep 1
+		test=$(curl -s http://127.0.0.1:${clash_api_port} &> /dev/null)
+		i=$((i+1))
+	done
+	num=$(cat $DIR/proxies | wc -l)
+	i=1
+	while [ "$i" -le "$num" ];do
+		group_name=$(awk -F ',' 'NR=="'${i}'" {print $1}' $DIR/proxies | sed 's/ /%20/g')
+		now_name=$(awk -F ',' 'NR=="'${i}'" {print $2}' $DIR/proxies)
+		clash_api_put http://127.0.0.1:${clash_api_port}/proxies/${group_name} "{\"name\":\"${now_name}\"}"
+		i=$((i+1))
+	done
+}
+
+init_clash_api() {
+	get_clash_config clash_api_listen external-controller
+	get_clash_config clash_api_secret secret
+	api_listen_ip=$(echo $clash_api_listen | cut -d ":" -f 1)
+	api_listen_port=$(echo $clash_api_listen | cut -d ":" -f 2)
+	if command -v curl >/dev/null 2>&1; then
+		if [ -z "$api_listen_ip" ] || [ "$api_listen_port" == "0.0.0.0" ]; then
+			CLASH_API_AVAILABLE=1
+			clash_api_port=$api_listen_port
+		else
+			echo "You need to set the listening IP of clash api to 0.0.0.0!!!"
+			CLASH_API_AVAILABLE=0
+		fi
+	else
+		echo "You need to install curl!!!"
+	 	CLASH_API_AVAILABLE=0
+	fi
 }
 
 init_mac_list() {
@@ -281,10 +348,10 @@ init_fw() {
 	nft flush table inet nftclash
 	nft add chain inet nftclash prerouting { type filter hook prerouting priority 0 \; }
 
-	ip rule add fwmark $fwmark table 100
-	ip route add local default dev lo table 100
-	ip -6 rule add fwmark $fwmark table 101
-	ip -6 route add local ::/0 dev lo table 101
+	ip rule add fwmark $fwmark table 100 2> /dev/null
+	ip route add local default dev lo table 100 2> /dev/null
+	ip -6 rule add fwmark $fwmark table 101 2> /dev/null
+	ip -6 route add local ::/0 dev lo table 101 2> /dev/null
 
 	RESERVED_IP="$(echo $reserve_ipv4 | sed 's/ /, /g')"
 	RESERVED_IP6="$(echo $reserve_ipv6 | sed 's/ /, /g')"
@@ -368,22 +435,35 @@ init_started() {
 	if [ ! -d "$DIR/ruleset" ]; then
 			mkdir -p "$DIR/ruleset"
 	fi
+	if [ ! -d "$TMPDIR" ]; then
+			mkdir -p "$TMPDIR"
+	fi
 	init_config
 	init_fw
+	clash_api_config_restore
+	echo "Clash Service Started!!!"
 }
 
 case "$1" in
   init_startup)
 		init_startup
-	;;
+		;;
   init_started)
 		init_started
-	;;
+		;;
 	init_config)
 		init_config
-	;;
+		;;
 	init_fw)
 		init_fw
-	;;
+		;;
+	api_config_save)
+		init_clash_api
+		clash_api_config_save
+		;;
+	api_config_restore)
+		init_clash_api
+		clash_api_config_restore
+		;;
 esac
 exit 0
