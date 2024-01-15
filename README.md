@@ -6,9 +6,9 @@
 
 功能介紹：
 --
-簡潔的透明代理
-支持繞過中國大陸IP
-支持繞過指定IP
+簡潔的透明代理  
+支持繞過中國大陸IP  
+支持繞過指定IP  
 支持在指定IP匹配以上兩個規則時仍然代理
 
 系統支持：
@@ -18,10 +18,10 @@
 安裝方式：
 --
 1.下載源代碼
-2.解壓 install_files 文件夾的内容到 /etc/nftclash/install 文件夾下
-3.設置 /etc/nftclash 文件夾權限為 777
-4.執行 /etc/nftclash/install/install.sh
-5.執行 service nftclash start 啓動clash服務
+2.解壓 install_files 文件夾的内容到 /etc/nftclash/install 文件夾下  
+3.設置 /etc/nftclash 文件夾權限為 777  
+4.執行 /etc/nftclash/install/install.sh  
+5.執行 service nftclash start 啓動clash服務  
 
 功能配置：
 --
