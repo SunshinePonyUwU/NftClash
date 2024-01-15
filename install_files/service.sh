@@ -9,6 +9,10 @@ FILES_REPO_URL="https://raw.githubusercontent.com/SunshinePonyUwU/NftClashFiles/
 reserve_ipv4="0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 100.64.0.0/10 169.254.0.0/16 172.16.0.0/12 192.168.0.0/16 224.0.0.0/4 240.0.0.0/4"
 reserve_ipv6="::/128 ::1/128 ::ffff:0:0/96 64:ff9b::/96 100::/64 2001::/32 2001:20::/28 2001:db8::/32 2002::/16 fc00::/7 fe80::/10 ff00::/8"
 
+check_command() {
+	command -v sh &>/dev/null && command -v $1 &>/dev/null || type $1 &>/dev/null
+}
+
 get_clash_config() {
 	[ -z "$3" ] && configpath="$CLASH_HOME_DIR/config.yaml" || configpath=$3
 	if [ -e "$configpath" ]; then
@@ -297,6 +301,19 @@ init_fw() {
 	nft add rule inet nftclash prerouting meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
 
 	[ "$DNS_REDIRECT" = 1 ] && init_fw_dns
+
+	# Local Proxy
+	nft add chain inet nftclash output { type nat hook output priority -100 \; }
+	nft add rule inet nftclash output meta skgid 7890 return
+	nft add rule inet nftclash output ip daddr {$RESERVED_IP} return
+	nft add rule inet nftclash output ip6 daddr {$RESERVED_IP6} return
+
+	[ "$BYPASS_PASS_IP_ENABLED" = 1 ] && nft add rule inet nftclash output ip daddr @pass_ip return
+	[ "$BYPASS_PASS_IP_ENABLED" = 1 ] && nft add rule inet nftclash output ip6 daddr @pass_ip6 return
+	[ "$BYPASS_CN_IP_ENABLED" = 1 ] && nft add rule inet nftclash output ip daddr @cn_ip return
+	[ "$BYPASS_CN_IP_ENABLED" = 1 ] && nft add rule inet nftclash output ip6 daddr @cn_ip6 return
+
+	nft add rule inet nftclash output meta l4proto tcp mark set $fwmark redirect to $redir_port
 }
 
 init_startup() {
@@ -326,6 +343,16 @@ init_startup() {
 		fi
 		echo "Please manually move the clash executable file to $CLASH_HOME_DIR/clash"
 		exit 1
+	fi
+	if [ -z "$(id nftclash 2>/dev/null | grep 'root')" ];then
+		if check_command userdel useradd groupmod; then
+			userdel nftclash 2>/dev/null
+			useradd nftclash -u 7890
+			groupmod nftclash -g 7890
+			sed -Ei s/7890:7890/0:7890/g /etc/passwd
+		else
+			grep -qw nftclash /etc/passwd || echo "nftclash:x:0:7890:::" >> /etc/passwd
+		fi
 	fi
 }
 
