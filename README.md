@@ -1,4 +1,3 @@
-Nft Clash
 <h1 align="center">
   <img src="https://github.com/SunshinePonyUwU/NftClash/blob/main/logo.png?raw=true" alt="Clash" width="200">
   <br>Nft Clash<br>
