@@ -95,11 +95,11 @@ download_file() {
 }
 
 fetch_files_repo(){
-	curl -s -H "$FILES_REPO_URL$1"
+	curl -s "$FILES_REPO_URL$1"
 }
 
 fetch_repo(){
-	curl -s -H "$REPO_URL$1"
+	curl -s "$REPO_URL$1"
 }
 
 clash_api_get(){
@@ -165,7 +165,6 @@ init_clash_api() {
 }
 
 check_update() {
-	
 	if [ -e "$VERSION_PATH" ]; then
 		source $VERSION_PATH
 		[ -z "$VERSION_SERVICE" ] && {
@@ -187,7 +186,7 @@ check_update() {
 		echo -e "${GREEN}SERVICE SCRIPT IS UP TO DATE${NOCOLOR}"
 	else
 		echo -e "${YELLOW}SERVICE SCRIPT HAVE AN UPDATE${NOCOLOR}"
-		read -p "Do you want update right now? [y|N]" ReadLine
+		read -p "Do you want update right now? [y|N]: " ReadLine
 		case "$ReadLine" in
 			"y")
 				echo "Removing old install files."
@@ -202,12 +201,12 @@ check_update() {
 		esac
 	fi
 	if [ "$BYPASS_CN_IP_ENABLED" = 1 ]; then
-		if [ -n "$VERSION_CHINA_IPLIST"]; then
+		if [ -n "$VERSION_CHINA_IPLIST" ]; then
 			if [ $VERSION_CHINA_IPLIST -eq $latest_china_iplist_version ]; then
 				echo -e "${GREEN}CHINA IP LIST IS UP TO DATE${NOCOLOR}"
 			else
 				echo -e "${YELLOW}CHINA IP LIST HAVE AN UPDATE${NOCOLOR}"
-				read -p "Do you want update right now? [y|N]" ReadLine
+				read -p "Do you want update right now? [y|N]: " ReadLine
 				case "$ReadLine" in
 					"y")
 						echo "Removing old china ip list"
@@ -220,12 +219,12 @@ check_update() {
 						set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
 						nft list set inet nftclash cn_ip &> /dev/null && {
 							echo -e "${BLUE}UPDATE CHINA IP SET${NOCOLOR}"
-							nft flush set nftclash cn_ip
+							nft flush set inet nftclash cn_ip
 							nft add element inet nftclash cn_ip {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")}
 						}
 						nft list set inet nftclash cn_ip6 &> /dev/null && {
 							echo -e "${BLUE}UPDATE CHINA IPV6 SET${NOCOLOR}"
-							nft flush set nftclash cn_ip6
+							nft flush set inet nftclash cn_ip6
 							nft add element inet nftclash cn_ip6 {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")}
 						}
 						;;
@@ -599,6 +598,7 @@ case "$1" in
 		clash_api_config_restore
 		;;
 	check_update)
+		init_config
 		check_update
 		;;
 esac
