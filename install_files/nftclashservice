@@ -10,7 +10,7 @@ DIR=/etc/nftclash
 CLASH_HOME_DIR=$DIR/clash
 
 start_service() {
-    $DIR/service.sh init_startup
+  $DIR/service.sh init_startup
 	if [ "$?" = "0" ]; then
 		procd_open_instance
 		procd_set_param respawn
@@ -19,6 +19,6 @@ start_service() {
 		procd_set_param command $CLASH_HOME_DIR/clash -d $CLASH_HOME_DIR
 		procd_set_param user nftclash
 		procd_close_instance
-        $DIR/service.sh init_started
+    $DIR/service.sh init_started
 	fi
 }
