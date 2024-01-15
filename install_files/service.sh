@@ -202,7 +202,7 @@ check_update() {
 		esac
 	fi
 	if [ "$BYPASS_CN_IP_ENABLED" = 1 ]; then
-		if [ ! -z "$VERSION_CHINA_IPLIST"]; then
+		if [ -n "$VERSION_CHINA_IPLIST"]; then
 			if [ $VERSION_CHINA_IPLIST -eq $latest_china_iplist_version ]; then
 				echo -e "${GREEN}CHINA IP LIST IS UP TO DATE${NOCOLOR}"
 			else
@@ -409,6 +409,7 @@ init_fw_bypass() {
 			echo -e "${YELLOW}china_ip_list.txt does not exist!!!${NOCOLOR}"
 			wget -O "$DIR/ipset/china_ip_list.txt" "$FILES_REPO_URL/china_ip_list.txt"
 			if [ "$?" = "0" ]; then
+				china_ip_list_downloaded=1
 				chmod 777 "$DIR/ipset/china_ip_list.txt"
 				init_cn_ip_bypass
 			else
@@ -422,12 +423,21 @@ init_fw_bypass() {
 			echo -e "${YELLOW}china_ipv6_list.txt does not exist!!!${NOCOLOR}"
 			wget -O "$DIR/ipset/china_ipv6_list.txt" "$FILES_REPO_URL/china_ipv6_list.txt"
 			if [ "$?" = "0" ]; then
+				china_ipv6_list_downloaded=1
 				chmod 777 "$DIR/ipset/china_ipv6_list.txt"
 				init_cn_ipv6_bypass
 			else
 				echo -e "${RED}china_ipv6_list.txt download failed!!!${NOCOLOR}"
 			fi
 		fi
+	fi
+	if [ "$BYPASS_CN_IP_ENABLED" = 1 ] && [ -n "$china_ip_list_downloaded" ] && [ -n "$china_ipv6_list_downloaded" ]; then
+		update_data=$(fetch_files_repo "/update.json")
+		[ -z "$update_data" ] && {
+			echo -e "${RED}UPDATE CHECK FAILED!!!${NOCOLOR}"
+		}
+		latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
+		set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
 	fi
 }
 
@@ -587,6 +597,9 @@ case "$1" in
 	api_config_restore)
 		init_clash_api
 		clash_api_config_restore
+		;;
+	check_update)
+		check_update
 		;;
 esac
 exit 0
