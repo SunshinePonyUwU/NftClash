@@ -1,4 +1,10 @@
 
+BLUE='\033[1;34m'
+YELLOW='\033[1;33m'
+GREEN='\033[1;32m'
+RED='\033[1;31m'
+NOCOLOR='\033[0m' # No Color
+
 DIR=/etc/nftclash
 TMPDIR=/tmp/nftclash
 CLASH_HOME_DIR=$DIR/clash
@@ -9,6 +15,7 @@ FILES_REPO_URL="https://ghproxy.projects.20percent.cool/https://raw.githubuserco
 
 reserve_ipv4="0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 100.64.0.0/10 169.254.0.0/16 172.16.0.0/12 192.168.0.0/16 224.0.0.0/4 240.0.0.0/4"
 reserve_ipv6="::/128 ::1/128 ::ffff:0:0/96 64:ff9b::/96 100::/64 2001::/32 2001:20::/28 2001:db8::/32 2002::/16 fc00::/7 fe80::/10 ff00::/8"
+host_ipv4=$(ubus call network.interface.lan status 2>&1 | grep \"address\" | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}';)
 
 check_command() {
 	command -v sh &>/dev/null && command -v $1 &>/dev/null || type $1 &>/dev/null
@@ -84,7 +91,7 @@ clash_api_get(){
 	if [ "$CLASH_API_AVAILABLE" = 1 ]; then
 		curl -s -H "Authorization: Bearer ${clash_api_secret}" -H "Content-Type:application/json" "$1"
 	else
-		echo "Clash Api is not available!!!"
+		echo -e "${RED}Clash Api is not available!!!${NOCOLOR}"
 	fi
 }
 
@@ -92,7 +99,7 @@ clash_api_put(){
 	if [ "$CLASH_API_AVAILABLE" = 1 ]; then
 		curl -sS -X PUT -H "Authorization: Bearer ${clash_api_secret}" -H "Content-Type:application/json" "$1" -d "$2" &> /dev/null
 	else
-		echo "Clash Api is not available!!!"
+		echo -e "${RED}Clash Api is not available!!!${NOCOLOR}"
 	fi
 }
 
@@ -129,12 +136,12 @@ init_clash_api() {
 			CLASH_API_AVAILABLE=1
 			clash_api_port=$api_listen_port
 		else
-			echo "You need to set the listening IP of clash api to 0.0.0.0!!!"
+			echo -e "${RED}You need to set the listening IP of clash api to 0.0.0.0!!!${NOCOLOR}"
 			CLASH_API_AVAILABLE=0
 		fi
 	else
-		echo "You need to install curl!!!"
-	 	CLASH_API_AVAILABLE=0
+		echo -e "${RED}You need to install curl!!!${NOCOLOR}"
+		CLASH_API_AVAILABLE=0
 	fi
 }
 
@@ -152,7 +159,7 @@ init_mac_list() {
 }
 
 init_mac_white_list() {
-	echo "INIT MAC_WHITE_LIST"
+	echo -e "${BLUE}INIT MAC_WHITE_LIST${NOCOLOR}"
 	nft add set inet nftclash ether_list { type ether_addr\; } && \
 	nft add rule inet nftclash prerouting ether saddr != @ether_list return
 	if [ -n "$(grep -v '^$' "$DIR/ruleset/ether_white_list.txt")" ]; then
@@ -164,7 +171,7 @@ init_mac_white_list() {
 }
 
 init_mac_black_list() {
-	echo "INIT MAC_BLACK_LIST"
+	echo -e "${BLUE}INIT MAC_BLACK_LIST${NOCOLOR}"
 	nft add set inet nftclash ether_list { type ether_addr\; } && \
 	nft add rule inet nftclash prerouting ether saddr @ether_list return
 	if [ -n "$(grep -v '^$' "$DIR/ruleset/ether_black_list.txt")" ]; then
@@ -176,7 +183,7 @@ init_mac_black_list() {
 }
 
 init_force_proxy_ip() {
-	echo "INIT FORCE PROXY_IP"
+	echo -e "${BLUE}INIT FORCE PROXY_IP${NOCOLOR}"
 	nft add set inet nftclash proxy_ip { type ipv4_addr\; flags interval\; } && \
 	if [ -n "$(grep -v '^$' "$DIR/ipset/proxy_ip_list.txt")" ]; then
 		PROXY_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/proxy_ip_list.txt")
@@ -187,7 +194,7 @@ init_force_proxy_ip() {
 }
 
 init_force_proxy_ipv6() {
-	echo "INIT FORCE PROXY_IP6"
+	echo -e "${BLUE}INIT FORCE PROXY_IP6${NOCOLOR}"
 	nft add set inet nftclash proxy_ip6 { type ipv6_addr\; flags interval\; } && \
 	if [ -n "$(grep -v '^$' "$DIR/ipset/proxy_ipv6_list.txt")" ]; then
 		PROXY_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/proxy_ipv6_list.txt")
@@ -198,7 +205,7 @@ init_force_proxy_ipv6() {
 }
 
 init_pass_ip_bypass() {
-	echo "INIT PASS_IP BYPASS"
+	echo -e "${BLUE}INIT PASS_IP BYPASS${NOCOLOR}"
 	nft add set inet nftclash pass_ip { type ipv4_addr\; flags interval\; } && \
 	if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
 		nft add rule inet nftclash prerouting ip daddr @pass_ip ip daddr != @proxy_ip return
@@ -214,7 +221,7 @@ init_pass_ip_bypass() {
 }
 
 init_pass_ipv6_bypass() {
-	echo "INIT PASS_IP6 BYPASS"
+	echo -e "${BLUE}INIT PASS_IP6 BYPASS${NOCOLOR}"
 	nft add set inet nftclash pass_ip6 { type ipv6_addr\; flags interval\; } && \
 	if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
 		nft add rule inet nftclash prerouting ip6 daddr @pass_ip6 ip6 daddr != @proxy_ip6 return
@@ -231,7 +238,7 @@ init_pass_ipv6_bypass() {
 
 init_cn_ip_bypass() {
 	if [ -n "$(grep -v '^$' "$DIR/ipset/china_ip_list.txt")" ]; then
-		echo "INIT CN_IP BYPASS"
+		echo -e "${BLUE}INIT CN_IP BYPASS${NOCOLOR}"
 		CN_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")
 		nft add set inet nftclash cn_ip { type ipv4_addr\; flags interval\; } && \
 		nft add element inet nftclash cn_ip {$CN_IP} && \
@@ -241,14 +248,14 @@ init_cn_ip_bypass() {
 			nft add rule inet nftclash prerouting ip daddr @cn_ip return
 		fi
 	else
-		echo "china_ip_list.txt is empty!!!"
+		echo -e "${YELLOW}china_ip_list.txt is empty!!!${NOCOLOR}"
 		rm -f "$DIR/ipset/china_ip_list.txt"
 	fi
 }
 
 init_cn_ipv6_bypass() {
 	if [ -n "$(grep -v '^$' "$DIR/ipset/china_ipv6_list.txt")" ]; then
-		echo "INIT CN_IP6 BYPASS"
+		echo -e "${BLUE}INIT CN_IP6 BYPASS${NOCOLOR}"
 		CN_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")
 		nft add set inet nftclash cn_ip6 { type ipv6_addr\; flags interval\; } && \
 		nft add element inet nftclash cn_ip6 {$CN_IP6} && \
@@ -258,7 +265,7 @@ init_cn_ipv6_bypass() {
 			nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 return
 		fi
 	else
-		echo "china_ipv6_list.txt is empty!!!"
+		echo -e "${YELLOW}china_ipv6_list.txt is empty!!!${NOCOLOR}"
 		rm -f "$DIR/ipset/china_ipv6_list.txt"
 	fi
 }
@@ -269,7 +276,7 @@ init_fw_bypass() {
 		if [ -e "$DIR/ipset/proxy_ip_list.txt" ]; then
 			init_force_proxy_ip
 		else
-			echo "proxy_ip_list.txt does not exist!!!"
+			echo -e "${YELLOW}proxy_ip_list.txt does not exist!!!${NOCOLOR}"
 			echo "Creating proxy_ip_list.txt"
 			touch "$DIR/ipset/proxy_ip_list.txt"
 			init_force_proxy_ip
@@ -278,7 +285,7 @@ init_fw_bypass() {
 		if [ -e "$DIR/ipset/proxy_ipv6_list.txt" ]; then
 			init_force_proxy_ipv6
 		else
-			echo "proxy_ipv6_list.txt does not exist!!!"
+			echo -e "${YELLOW}proxy_ipv6_list.txt does not exist!!!${NOCOLOR}"
 			echo "Creating proxy_ipv6_list.txt"
 			touch "$DIR/ipset/proxy_ipv6_list.txt"
 			init_force_proxy_ipv6
@@ -289,7 +296,7 @@ init_fw_bypass() {
 		if [ -e "$DIR/ipset/pass_ip_list.txt" ]; then
 			init_pass_ip_bypass
 		else
-			echo "pass_ip_list.txt does not exist!!!"
+			echo -e "${YELLOW}pass_ip_list.txt does not exist!!!${NOCOLOR}"
 			echo "Creating pass_ip_list.txt"
 			touch "$DIR/ipset/pass_ip_list.txt"
 			init_pass_ip_bypass
@@ -298,7 +305,7 @@ init_fw_bypass() {
 		if [ -e "$DIR/ipset/pass_ipv6_list.txt" ]; then
 			init_pass_ipv6_bypass
 		else
-			echo "pass_ipv6_list.txt does not exist!!!"
+			echo -e "${YELLOW}pass_ipv6_list.txt does not exist!!!${NOCOLOR}"
 			echo "Creating pass_ipv6_list.txt"
 			touch "$DIR/ipset/pass_ipv6_list.txt"
 			init_pass_ipv6_bypass
@@ -309,26 +316,26 @@ init_fw_bypass() {
 		if [ -e "$DIR/ipset/china_ip_list.txt" ]; then
 			init_cn_ip_bypass
 		else
-			echo "china_ip_list.txt does not exist!!!"
+			echo -e "${YELLOW}china_ip_list.txt does not exist!!!${NOCOLOR}"
 			wget -O "$DIR/ipset/china_ip_list.txt" "$FILES_REPO_URL/china_ip_list.txt"
 			if [ "$?" = "0" ]; then
 				chmod 777 "$DIR/ipset/china_ip_list.txt"
 				init_cn_ip_bypass
 			else
-				echo "china_ip_list.txt download failed!!!"
+				echo -e "${RED}china_ip_list.txt download failed!!!${NOCOLOR}"
 			fi
 		fi
 		# IPv6 Rules
 		if [ -e "$DIR/ipset/china_ipv6_list.txt" ]; then
 			init_cn_ipv6_bypass
 		else
-			echo "china_ipv6_list.txt does not exist!!!"
+			echo -e "${YELLOW}china_ipv6_list.txt does not exist!!!${NOCOLOR}"
 			wget -O "$DIR/ipset/china_ipv6_list.txt" "$FILES_REPO_URL/china_ipv6_list.txt"
 			if [ "$?" = "0" ]; then
 				chmod 777 "$DIR/ipset/china_ipv6_list.txt"
 				init_cn_ipv6_bypass
 			else
-				echo "china_ipv6_list.txt download failed!!!"
+				echo -e "${RED}china_ipv6_list.txt download failed!!!${NOCOLOR}"
 			fi
 		fi
 	fi
@@ -339,7 +346,7 @@ init_fw_dns() {
 	dns_listen_port=$(echo $clash_dns_listen | cut -d ":" -f 2)
 	if [ "$clash_dns_enabled" = "true" ]; then
 		if [ -z "$dns_listen_ip" ] || [ "$dns_listen_ip" == "0.0.0.0" ]; then
-			echo "INIT DNS REDIRECT"
+			echo -e "${BLUE}INIT DNS_REDIRECT${NOCOLOR}"
 			nft add chain inet nftclash dns { type nat hook prerouting priority -100 \; }
 			case $MAC_LIST_MODE in
 			1)  # White List Mode
@@ -352,10 +359,10 @@ init_fw_dns() {
 			nft add rule inet nftclash dns udp dport 53 redirect to ${dns_listen_port}
 			nft add rule inet nftclash dns tcp dport 53 redirect to ${dns_listen_port}
 		else
-			echo "You need to set the listening IP of clash dns to 0.0.0.0!!!"
+			echo -e "${RED}You need to set the listening IP of clash dns to 0.0.0.0!!!${NOCOLOR}"
 		fi
 	else
-		echo "Clash dns is not enabled!"
+		echo -e "${RED}Clash dns is not enabled!${NOCOLOR}"
 	fi
 	
 }
@@ -409,19 +416,19 @@ init_fw() {
 
 init_startup() {
 	! modprobe nft_tproxy && {
-		echo "missing nft_tproxy!!!"
+		echo -e "${RED}missing nft_tproxy!!!${NOCOLOR}"
 		exit 1
 	}
 	if ! command -v yq >/dev/null 2>&1; then
-		echo "You need to install yq!!!"
+		echo -e "${RED}You need to install yq!!!${NOCOLOR}"
 		exit 1
 	fi
 	if [ -e "$CLASH_HOME_DIR/clash" ]; then
 		if [ -e "$CLASH_HOME_DIR/config.yaml" ]; then
 			chmod 777 -R "$DIR"
-			echo "INIT STARTUP DONE!"
+			echo -e "${BLUE}INIT STARTUP DONE!${NOCOLOR}"
 		else
-			echo "Please manually move the clash config file to $CLASH_HOME_DIR/config.yaml"
+			echo -e "${YELLOW}Please manually move the clash config file to $CLASH_HOME_DIR/config.yaml${NOCOLOR}"
 			exit 1
 		fi
 	else
@@ -429,10 +436,10 @@ init_startup() {
 		if [ ! -d "$CLASH_HOME_DIR" ]; then
 			echo "Creating directory"
 			mkdir -p "$CLASH_HOME_DIR"
-			echo "Please manually restart service!"
+			echo -e "${YELLOW}Please manually restart service!"
 			exit 1
 		fi
-		echo "Please manually move the clash executable file to $CLASH_HOME_DIR/clash"
+		echo -e "${YELLOW}Please manually move the clash executable file to $CLASH_HOME_DIR/clash${NOCOLOR}"
 		exit 1
 	fi
 	if [ -z "$(id nftclash 2>/dev/null | grep 'root')" ];then
@@ -449,26 +456,28 @@ init_startup() {
 
 init_started() {
 	if [ ! -d "$DIR/ipset" ]; then
-			mkdir -p "$DIR/ipset"
+		mkdir -p "$DIR/ipset"
 	fi
 	if [ ! -d "$DIR/ruleset" ]; then
-			mkdir -p "$DIR/ruleset"
+		mkdir -p "$DIR/ruleset"
 	fi
 	if [ ! -d "$TMPDIR" ]; then
-			mkdir -p "$TMPDIR"
+		mkdir -p "$TMPDIR"
 	fi
 	init_config
 	init_fw
+	echo -e "${BLUE}WAITTING FOR CLASH API${NOCOLOR}"
 	clash_api_config_restore
+	echo -e "${GREEN}Clash Api started at ${YELLOW}http://${host_ipv4}:${clash_api_port}${NOCOLOR}"
 	add_crontab
-	echo "Clash Service Started!!!"
+	echo -e "${BLUE}CLASH SERVICE STARTED${NOCOLOR}"
 }
 
 case "$1" in
-  init_startup)
+	init_startup)
 		init_startup
 		;;
-  init_started)
+	init_started)
 		init_started
 		;;
 	init_config)
