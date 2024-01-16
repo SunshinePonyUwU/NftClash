@@ -320,36 +320,48 @@ init_pass_ipv6_bypass() {
 }
 
 init_cn_ip_bypass() {
-	if [ -n "$(grep -v '^$' "$DIR/ipset/china_ip_list.txt")" ]; then
-		echo -e "${BLUE}INIT CN_IP BYPASS${NOCOLOR}"
-		CN_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")
-		nft add set inet nftclash cn_ip { type ipv4_addr\; flags interval\; } && \
-		nft add element inet nftclash cn_ip {$CN_IP} && \
-		if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
-			nft add rule inet nftclash prerouting ip daddr @cn_ip ip daddr != @proxy_ip return
+	if [ -e "$DIR/ipset/china_ip_list.txt" ]; then
+		if [ -n "$(grep -v '^$' "$DIR/ipset/china_ip_list.txt")" ]; then
+			echo -e "${BLUE}INIT CN_IP BYPASS${NOCOLOR}"
+			CN_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")
+			nft add set inet nftclash cn_ip { type ipv4_addr\; flags interval\; } && \
+			nft add element inet nftclash cn_ip {$CN_IP} && \
+			if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
+				nft add rule inet nftclash prerouting ip daddr @cn_ip ip daddr != @proxy_ip return
+			else
+				nft add rule inet nftclash prerouting ip daddr @cn_ip return
+			fi
 		else
-			nft add rule inet nftclash prerouting ip daddr @cn_ip return
+			echo -e "${YELLOW}china_ip_list.txt is empty!!!${NOCOLOR}"
+			set_config VERSION_CHINA_IPLIST 0 "$VERSION_PATH"
+			rm -f "$DIR/ipset/china_ip_list.txt"
 		fi
 	else
-		echo -e "${YELLOW}china_ip_list.txt is empty!!!${NOCOLOR}"
-		rm -f "$DIR/ipset/china_ip_list.txt"
+		echo -e "${YELLOW}china_ip_list.txt is missing!!!${NOCOLOR}"
+		set_config VERSION_CHINA_IPLIST 0 "$VERSION_PATH"
 	fi
 }
 
 init_cn_ipv6_bypass() {
-	if [ -n "$(grep -v '^$' "$DIR/ipset/china_ipv6_list.txt")" ]; then
-		echo -e "${BLUE}INIT CN_IP6 BYPASS${NOCOLOR}"
-		CN_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")
-		nft add set inet nftclash cn_ip6 { type ipv6_addr\; flags interval\; } && \
-		nft add element inet nftclash cn_ip6 {$CN_IP6} && \
-		if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
-			nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 ip6 daddr != @proxy_ip6 return
+	if [ -e "$DIR/ipset/china_ipv6_list.txt" ]; then
+		if [ -n "$(grep -v '^$' "$DIR/ipset/china_ipv6_list.txt")" ]; then
+			echo -e "${BLUE}INIT CN_IP6 BYPASS${NOCOLOR}"
+			CN_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")
+			nft add set inet nftclash cn_ip6 { type ipv6_addr\; flags interval\; } && \
+			nft add element inet nftclash cn_ip6 {$CN_IP6} && \
+			if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
+				nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 ip6 daddr != @proxy_ip6 return
+			else
+				nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 return
+			fi
 		else
-			nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 return
+			echo -e "${YELLOW}china_ipv6_list.txt is empty!!!${NOCOLOR}"
+			set_config VERSION_CHINA_IPLIST 0 "$VERSION_PATH"
+			rm -f "$DIR/ipset/china_ipv6_list.txt"
 		fi
 	else
-		echo -e "${YELLOW}china_ipv6_list.txt is empty!!!${NOCOLOR}"
-		rm -f "$DIR/ipset/china_ipv6_list.txt"
+		echo -e "${YELLOW}china_ipv6_list.txt is missing!!!${NOCOLOR}"
+		set_config VERSION_CHINA_IPLIST 0 "$VERSION_PATH"
 	fi
 }
 
@@ -395,10 +407,13 @@ init_fw_bypass() {
 		fi
 	fi
 	if [ "$BYPASS_CN_IP_ENABLED" = 1 ]; then
-		# IPv4 Rules
-		if [ -e "$DIR/ipset/china_ip_list.txt" ]; then
-			init_cn_ip_bypass
+		if [ -e "$VERSION_PATH" ]; then
+			source $VERSION_PATH
 		else
+			echo -e "${RED}version file is missing!!!${NOCOLOR}"
+		fi
+		# IPv4 Rules
+		if [ "$VERSION_CHINA_IPLIST" = 0 ] || [ -z "$VERSION_CHINA_IPLIST" ]; then
 			echo -e "${YELLOW}china_ip_list.txt does not exist!!!${NOCOLOR}"
 			wget -O "$DIR/ipset/china_ip_list.txt" "$FILES_REPO_URL/china_ip_list.txt"
 			if [ "$?" = "0" ]; then
@@ -408,11 +423,11 @@ init_fw_bypass() {
 			else
 				echo -e "${RED}china_ip_list.txt download failed!!!${NOCOLOR}"
 			fi
+		else
+			init_cn_ip_bypass
 		fi
 		# IPv6 Rules
-		if [ -e "$DIR/ipset/china_ipv6_list.txt" ]; then
-			init_cn_ipv6_bypass
-		else
+		if [ "$VERSION_CHINA_IPLIST" = 0 ] || [ -z "$VERSION_CHINA_IPLIST" ]; then
 			echo -e "${YELLOW}china_ipv6_list.txt does not exist!!!${NOCOLOR}"
 			wget -O "$DIR/ipset/china_ipv6_list.txt" "$FILES_REPO_URL/china_ipv6_list.txt"
 			if [ "$?" = "0" ]; then
@@ -422,15 +437,17 @@ init_fw_bypass() {
 			else
 				echo -e "${RED}china_ipv6_list.txt download failed!!!${NOCOLOR}"
 			fi
+		else
+			init_cn_ipv6_bypass
 		fi
-	fi
-	if [ "$BYPASS_CN_IP_ENABLED" = 1 ] && [ -n "$china_ip_list_downloaded" ] && [ -n "$china_ipv6_list_downloaded" ]; then
-		update_data=$(fetch_files_repo "/update.json")
-		[ -z "$update_data" ] && {
-			echo -e "${RED}UPDATE CHECK FAILED!!!${NOCOLOR}"
-		}
-		latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
-		set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
+		if [ -n "$china_ip_list_downloaded" ] && [ -n "$china_ipv6_list_downloaded" ]; then
+			update_data=$(fetch_files_repo "/update.json")
+			[ -z "$update_data" ] && {
+				echo -e "${RED}UPDATE CHECK FAILED!!!${NOCOLOR}"
+			}
+			latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
+			set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
+		fi
 	fi
 }
 
