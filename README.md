@@ -25,6 +25,7 @@
 
 檢查更新：
 --
+CHINA IP LIST 更新后無需重啓立即生效
 ```shell
 /etc/nftclash/service.sh check_update
 ```
