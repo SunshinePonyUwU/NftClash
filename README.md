@@ -41,6 +41,9 @@
 | FORCE_PROXY_IP_ENABLED | 1 | 0,1 | 啓用代理指定IP |
 | MAC_LIST_MODE | 0 | 0,1,2 | 0:禁用功能,1:MAC白名單模式,2:MAC黑名單模式 |
 | LOCAL_PROXY_IPV6 | 0 | 0,1 | 是否代理本機IPV6，和繞過中國大陸IP一起使用避免回環 |
+| LOCAL_PROXY_BYPASS_53 | 0 | 0,1 | 本地代理繞過DNS (TCP) |
+| BYPASS_53_TCP | 0 | 0,1 | 不代理DNS (TCP) |
+| BYPASS_53_UDP | 0 | 0,1 | 不代理DNS (UDP) |
 
 DNS配置：
 --

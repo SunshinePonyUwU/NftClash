@@ -69,6 +69,9 @@ init_config() {
 		set_config FORCE_PROXY_IP_ENABLED 1
 		set_config MAC_LIST_MODE 0
 		set_config LOCAL_PROXY_IPV6 0
+		set_config LOCAL_PROXY_BYPASS_53 0
+		set_config BYPASS_53_TCP 0
+		set_config BYPASS_53_UDP 0
 		source $CONFIG_PATH
 	fi
 
@@ -80,6 +83,9 @@ init_config() {
 	[ -z "$FORCE_PROXY_IP_ENABLED" ] && FORCE_PROXY_IP_ENABLED=1
 	[ -z "$MAC_LIST_MODE" ] && MAC_LIST_MODE=0
 	[ -z "$LOCAL_PROXY_IPV6" ] && LOCAL_PROXY_IPV6=0
+	[ -z "$LOCAL_PROXY_BYPASS_53" ] && LOCAL_PROXY_BYPASS_53=0
+	[ -z "$BYPASS_53_TCP" ] && BYPASS_53_TCP=0
+	[ -z "$BYPASS_53_UDP" ] && BYPASS_53_UDP=0
 
 	get_clash_config tproxy_port tproxy-port
 	get_clash_config redir_port redir-port
@@ -479,6 +485,9 @@ init_fw() {
 		}
 	}
 
+	[ "$BYPASS_53_TCP" = 1 ] && nft add rule inet nftclash prerouting tcp dport 53 return
+	[ "$BYPASS_53_UDP" = 1 ] && nft add rule inet nftclash prerouting udp dport 53 return
+
 	init_fw_bypass
 
 	nft add rule inet nftclash prerouting meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
@@ -490,6 +499,15 @@ init_fw() {
 	nft add rule inet nftclash output meta skgid 7890 return
 	nft add rule inet nftclash output ip daddr {$RESERVED_IP} return
 	nft add rule inet nftclash output ip6 daddr {$RESERVED_IP6} return
+
+	[ "$PROXY_COMMON_PORT_ENABLED" = 1 ] && {
+		COMMON_PORT_LIST=$(echo $PROXY_COMMON_PORT_LIST | sed 's/,/, /g')
+		[ -n "$COMMON_PORT_LIST" ] && {
+			nft add rule inet nftclash output tcp dport != {$COMMON_PORT_LIST} return
+		}
+	}
+
+	[ "$LOCAL_PROXY_BYPASS_53" = 1 ] && nft add rule inet nftclash output tcp dport 53 return
 
 	[ "$BYPASS_PASS_IP_ENABLED" = 1 ] && nft add rule inet nftclash output ip daddr @pass_ip return
 	[ "$BYPASS_PASS_IP_ENABLED" = 1 ] && nft add rule inet nftclash output ip6 daddr @pass_ip6 return
