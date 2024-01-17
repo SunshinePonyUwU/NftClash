@@ -234,7 +234,7 @@ check_update() {
 				download_file "$REPO_URL/install_files/install.sh" "$DIR/install/install.sh"
 				download_file "$REPO_URL/install_files/nftclashservice" "$DIR/install/nftclashservice"
 				download_file "$REPO_URL/install_files/service.sh" "$DIR/install/service.sh"
-    				download_file "$REPO_URL/install_files/version" "$DIR/install/version"
+				download_file "$REPO_URL/install_files/version" "$DIR/install/version"
 				chmod 777 -R "$DIR/install/"
 				$DIR/install/install.sh
 				set_config VERSION_SERVICE "$latest_service_version" "$VERSION_PATH"
@@ -660,9 +660,9 @@ case "$1" in
 		init_config
 		check_update
 		;;
-  	silent_update)
-   		init_config
-     		slient_update_china_iplist
-       		;;
+	silent_update)
+		init_config
+		slient_update_china_iplist
+		;;
 esac
 exit 0
