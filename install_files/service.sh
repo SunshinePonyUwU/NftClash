@@ -610,6 +610,7 @@ case "$1" in
 		init_config
 		;;
 	init_fw)
+		init_config
 		init_fw
 		;;
 	api_config_save)
