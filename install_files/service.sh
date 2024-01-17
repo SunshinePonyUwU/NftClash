@@ -72,6 +72,8 @@ init_config() {
 		set_config LOCAL_PROXY_BYPASS_53 0
 		set_config BYPASS_53_TCP 0
 		set_config BYPASS_53_UDP 0
+		set_config CLASH_CONFIG_UPDATE_ENABLED 0
+		set_config CLASH_CONFIG_UPDATE_URL ""
 		source $CONFIG_PATH
 	fi
 
@@ -86,6 +88,8 @@ init_config() {
 	[ -z "$LOCAL_PROXY_BYPASS_53" ] && LOCAL_PROXY_BYPASS_53=0
 	[ -z "$BYPASS_53_TCP" ] && BYPASS_53_TCP=0
 	[ -z "$BYPASS_53_UDP" ] && BYPASS_53_UDP=0
+	[ -z "$CLASH_CONFIG_UPDATE_ENABLED" ] && CLASH_CONFIG_UPDATE_ENABLED=0
+	[ -z "$CLASH_CONFIG_UPDATE_URL" ] && CLASH_CONFIG_UPDATE_URL=""
 
 	get_clash_config tproxy_port tproxy-port
 	get_clash_config redir_port redir-port
@@ -203,6 +207,14 @@ slient_update_china_iplist() {
 				}
 			fi
 		fi
+	fi
+}
+
+silent_update_clash_config() {
+	if [ "$CLASH_CONFIG_UPDATE_ENABLED" = 1 ] && [ "$CLASH_CONFIG_UPDATE_URL" != "" ]; then
+		download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml"
+		chmod 777 "$CLASH_HOME_DIR/config.yaml"
+		clash_api_put "http://127.0.0.1:${clash_api_port}/configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" &> /dev/null
 	fi
 }
 
@@ -660,9 +672,18 @@ case "$1" in
 		init_config
 		check_update
 		;;
+	silent_update_china_iplist)
+		init_config
+		slient_update_china_iplist
+		;;
+	silent_update_clash_config)
+		init_config
+		silent_update_clash_config
+		;;
 	silent_update)
 		init_config
 		slient_update_china_iplist
+		silent_update_clash_config
 		;;
 esac
 exit 0
