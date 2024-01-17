@@ -231,11 +231,10 @@ check_update() {
 		read -p "Do you want update right now? [y|N]: " ReadLine
 		case "$ReadLine" in
 			"y")
-				echo "Removing old install files."
-				rm -f "$DIR/install/*"
 				download_file "$REPO_URL/install_files/install.sh" "$DIR/install/install.sh"
 				download_file "$REPO_URL/install_files/nftclashservice" "$DIR/install/nftclashservice"
 				download_file "$REPO_URL/install_files/service.sh" "$DIR/install/service.sh"
+    				download_file "$REPO_URL/install_files/version" "$DIR/install/version"
 				chmod 777 -R "$DIR/install/"
 				$DIR/install/install.sh
 				set_config VERSION_SERVICE "$latest_service_version" "$VERSION_PATH"
