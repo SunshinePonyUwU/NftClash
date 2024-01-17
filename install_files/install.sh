@@ -1,6 +1,6 @@
 if ! command -v nft >/dev/null 2>&1; then
 	echo "Your system does not have nftables!!!"
-  echo "Cancel the installation."
+	echo "Cancel the installation."
 	exit 1
 fi
 
