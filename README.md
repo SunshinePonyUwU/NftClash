@@ -29,9 +29,21 @@ CHINA IP LIST 更新后無需重啓立即生效
 ```shell
 /etc/nftclash/service.sh check_update
 ```
-手動設置計劃任務：每天早上八點執行更新（不包括服務腳本）
+手動設置計劃任務示例：每天早上八點執行
 ```shell
 0 8 * * * pgrep clash && /etc/nftclash/service.sh silent_update
+```
+更新CHINA IP LIST和Clash配置文件(如果設置了的話)
+```shell
+/etc/nftclash/service.sh silent_update
+```
+只更新CHINA IP LIST
+```shell
+/etc/nftclash/service.sh silent_update_china_iplist
+```
+熱更新clash配置文件(如果設置了的話)
+```shell
+/etc/nftclash/service.sh silent_update_clash_config
 ```
 
 
@@ -50,6 +62,8 @@ CHINA IP LIST 更新后無需重啓立即生效
 | LOCAL_PROXY_BYPASS_53 | 0 | 0,1 | 本地代理繞過DNS (TCP) |
 | BYPASS_53_TCP | 0 | 0,1 | 不代理DNS (TCP) |
 | BYPASS_53_UDP | 0 | 0,1 | 不代理DNS (UDP) |
+| CLASH_CONFIG_UPDATE_ENABLED | 0 | 0,1 | 是否更新clash配置文件 |
+| CLASH_CONFIG_UPDATE_URL | "" | (URL) | 下載clash配置文件的鏈接 |
 ```shell
 /etc/nftclash/service.sh init_fw
 ```
