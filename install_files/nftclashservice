@@ -22,3 +22,7 @@ start_service() {
 		$DIR/service.sh init_started
 	fi
 }
+
+stop_service() {
+	$DIR/service.sh flush_fw
+}

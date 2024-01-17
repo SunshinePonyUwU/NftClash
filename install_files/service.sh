@@ -646,6 +646,11 @@ init_started() {
 	echo -e "${BLUE}CLASH SERVICE STARTED${NOCOLOR}"
 }
 
+flush_fw() {
+	nft flush table inet nftclash
+	nft delete table inet nftclash
+}
+
 case "$1" in
 	init_startup)
 		init_startup
@@ -659,6 +664,9 @@ case "$1" in
 	init_fw)
 		init_config
 		init_fw
+		;;
+	flush_fw)
+		flush_fw
 		;;
 	api_config_save)
 		init_clash_api
