@@ -45,6 +45,10 @@ CHINA IP LIST 更新后無需重啓立即生效
 | LOCAL_PROXY_BYPASS_53 | 0 | 0,1 | 本地代理繞過DNS (TCP) |
 | BYPASS_53_TCP | 0 | 0,1 | 不代理DNS (TCP) |
 | BYPASS_53_UDP | 0 | 0,1 | 不代理DNS (UDP) |
+```shell
+/etc/nftclash/service.sh init_fw
+```
+修改配置文件後可以使用此命令直接刷新防火牆規則
 
 DNS配置：
 --
