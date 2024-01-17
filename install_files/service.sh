@@ -554,9 +554,13 @@ init_fw() {
 
 	init_fw_bypass
 
+	echo -e "${BLUE}INIT TPROXY${NOCOLOR}"
+
 	nft add rule inet nftclash prerouting meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
 
 	[ "$DNS_REDIRECT" = 1 ] && init_fw_dns
+
+	echo -e "${BLUE}INIT LOCAL_PROXY${NOCOLOR}"
 
 	# Local Proxy
 	nft add chain inet nftclash output { type nat hook output priority -100 \; }
@@ -581,6 +585,7 @@ init_fw() {
 	[ "$LOCAL_PROXY_IPV6" = 0 ] && nft add rule inet nftclash output meta nfproto ipv6 return
 
 	nft add rule inet nftclash output meta l4proto tcp mark set $fwmark redirect to $redir_port
+	echo -e "${BLUE}INIT FIREWALL_RULES DONE!${NOCOLOR}"
 }
 
 init_startup() {
