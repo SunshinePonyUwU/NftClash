@@ -29,6 +29,11 @@ CHINA IP LIST 更新后無需重啓立即生效
 ```shell
 /etc/nftclash/service.sh check_update
 ```
+手動設置計劃任務：每天早上八點執行更新（不包括服務腳本）
+```shell
+0 8 * * * pgrep clash && /etc/nftclash/service.sh silent_update
+```
+
 
 功能配置：
 --
