@@ -183,10 +183,10 @@ slient_update_china_iplist() {
 		exit 1
 	}
 	latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
- 	if [ "$BYPASS_CN_IP_ENABLED" = 1 ]; then
+	if [ "$BYPASS_CN_IP_ENABLED" = 1 ]; then
 		if [ -n "$VERSION_CHINA_IPLIST" ]; then
 			if [ ! $VERSION_CHINA_IPLIST -eq $latest_china_iplist_version ]; then
-   				rm -f "$DIR/ipset/china_ip_list.txt"
+				rm -f "$DIR/ipset/china_ip_list.txt"
 				rm -f "$DIR/ipset/china_ipv6_list.txt"
 				download_file "$FILES_REPO_URL/china_ip_list.txt" "$DIR/ipset/china_ip_list.txt"
 				download_file "$FILES_REPO_URL/china_ipv6_list.txt" "$DIR/ipset/china_ipv6_list.txt"
