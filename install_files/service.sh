@@ -170,6 +170,42 @@ init_clash_api() {
 	fi
 }
 
+slient_update_china_iplist() {
+	if [ -e "$VERSION_PATH" ]; then
+		source $VERSION_PATH
+	else
+		echo "version file is missing!!!"
+		exit 1
+	fi
+	update_data=$(fetch_files_repo "/update.json")
+	[ -z "$update_data" ] && {
+		echo "UPDATE CHECK FAILED!!!"
+		exit 1
+	}
+	latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
+ 	if [ "$BYPASS_CN_IP_ENABLED" = 1 ]; then
+		if [ -n "$VERSION_CHINA_IPLIST" ]; then
+			if [ ! $VERSION_CHINA_IPLIST -eq $latest_china_iplist_version ]; then
+   				rm -f "$DIR/ipset/china_ip_list.txt"
+				rm -f "$DIR/ipset/china_ipv6_list.txt"
+				download_file "$FILES_REPO_URL/china_ip_list.txt" "$DIR/ipset/china_ip_list.txt"
+				download_file "$FILES_REPO_URL/china_ipv6_list.txt" "$DIR/ipset/china_ipv6_list.txt"
+				chmod 777 "$DIR/ipset/china_ip_list.txt"
+				chmod 777 "$DIR/ipset/china_ipv6_list.txt"
+				set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
+				nft list set inet nftclash cn_ip &> /dev/null && {
+					nft flush set inet nftclash cn_ip
+					nft add element inet nftclash cn_ip {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")}
+				}
+				nft list set inet nftclash cn_ip6 &> /dev/null && {
+					nft flush set inet nftclash cn_ip6
+					nft add element inet nftclash cn_ip6 {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")}
+				}
+			fi
+		fi
+	fi
+}
+
 check_update() {
 	if [ -e "$VERSION_PATH" ]; then
 		source $VERSION_PATH
@@ -625,5 +661,9 @@ case "$1" in
 		init_config
 		check_update
 		;;
+  	silent_update_cnip)
+   		init_config
+     		slient_update_china_iplist
+       		;;
 esac
 exit 0
