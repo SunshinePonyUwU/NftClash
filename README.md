@@ -37,7 +37,7 @@ CHINA IP LIST 更新后無需重啓立即生效
 ```shell
 /etc/nftclash/service.sh silent_update
 ```
-只更新CHINA IP LIST
+更新CHINA IP LIST
 ```shell
 /etc/nftclash/service.sh silent_update_china_iplist
 ```
