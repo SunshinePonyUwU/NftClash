@@ -661,7 +661,7 @@ case "$1" in
 		init_config
 		check_update
 		;;
-  	silent_update_cnip)
+  	silent_update)
    		init_config
      		slient_update_china_iplist
        		;;
