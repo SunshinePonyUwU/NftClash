@@ -55,6 +55,9 @@ set_config() {
 }
 
 init_config() {
+	if [ -e "$VERSION_PATH" ]; then
+		source $VERSION_PATH
+	fi
 	if [ -e "$CONFIG_PATH" ]; then
 		source $CONFIG_PATH
 	else
@@ -74,6 +77,7 @@ init_config() {
 		set_config BYPASS_53_UDP 0
 		set_config CLASH_CONFIG_UPDATE_ENABLED 0
 		set_config CLASH_CONFIG_UPDATE_URL ""
+		set_config CLASH_CONFIG_UPDATE_UA ""
 		source $CONFIG_PATH
 	fi
 
@@ -90,6 +94,7 @@ init_config() {
 	[ -z "$BYPASS_53_UDP" ] && BYPASS_53_UDP=0
 	[ -z "$CLASH_CONFIG_UPDATE_ENABLED" ] && CLASH_CONFIG_UPDATE_ENABLED=0
 	[ -z "$CLASH_CONFIG_UPDATE_URL" ] && CLASH_CONFIG_UPDATE_URL=""
+	[ -z "$CLASH_CONFIG_UPDATE_UA" ] && CLASH_CONFIG_UPDATE_UA="nftclash/${VERSION_SERVICE}"
 
 	get_clash_config tproxy_port tproxy-port
 	get_clash_config redir_port redir-port
@@ -223,6 +228,7 @@ update_clash_config() {
 		echo -e "${BLUE}UPDATE CLASH CONFIG${NOCOLOR}"
 		download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml"
 		chmod 777 "$CLASH_HOME_DIR/config.yaml"
+		echo -e "${BLUE}RELOAD CONFIG${NOCOLOR}"
 		clash_api_put "http://127.0.0.1:${clash_api_port}/configs?force=true" "{\"path\":\"\",\"payload\":\"\"}"
 	else
 		echo -e "${YELLOW}no update needed!${NOCOLOR}"
