@@ -218,6 +218,17 @@ silent_update_clash_config() {
 	fi
 }
 
+update_clash_config() {
+	if [ "$CLASH_CONFIG_UPDATE_ENABLED" = 1 ] && [ "$CLASH_CONFIG_UPDATE_URL" != "" ]; then
+		echo -e "${BLUE}UPDATE CLASH CONFIG${NOCOLOR}"
+		download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml"
+		chmod 777 "$CLASH_HOME_DIR/config.yaml"
+		clash_api_put "http://127.0.0.1:${clash_api_port}/configs?force=true" "{\"path\":\"\",\"payload\":\"\"}"
+	else
+		echo -e "${YELLOW}no update needed!${NOCOLOR}"
+	fi
+}
+
 check_update() {
 	if [ -e "$VERSION_PATH" ]; then
 		source $VERSION_PATH
@@ -684,6 +695,10 @@ case "$1" in
 	check_update)
 		init_config
 		check_update
+		;;
+	update_clash_config)
+		init_config
+		update_clash_config
 		;;
 	silent_update_china_iplist)
 		init_config
