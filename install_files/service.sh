@@ -55,9 +55,6 @@ set_config() {
 }
 
 init_config() {
-	if [ -e "$VERSION_PATH" ]; then
-		source $VERSION_PATH
-	fi
 	if [ -e "$CONFIG_PATH" ]; then
 		source $CONFIG_PATH
 	else
@@ -94,7 +91,7 @@ init_config() {
 	[ -z "$BYPASS_53_UDP" ] && BYPASS_53_UDP=0
 	[ -z "$CLASH_CONFIG_UPDATE_ENABLED" ] && CLASH_CONFIG_UPDATE_ENABLED=0
 	[ -z "$CLASH_CONFIG_UPDATE_URL" ] && CLASH_CONFIG_UPDATE_URL=""
-	[ -z "$CLASH_CONFIG_UPDATE_UA" ] && CLASH_CONFIG_UPDATE_UA="nftclash/${VERSION_SERVICE}"
+	[ -z "$CLASH_CONFIG_UPDATE_UA" ] && CLASH_CONFIG_UPDATE_UA=""
 
 	get_clash_config tproxy_port tproxy-port
 	get_clash_config redir_port redir-port
@@ -104,9 +101,10 @@ init_config() {
 	init_clash_api
 }
 
-# LINK, PATH
+# LINK, PATH, UA
 download_file() {
-	wget -O "$2" "$1"
+	[ -z "$3" ] && ua="nftclash-download" || ua=$3
+	wget -O "$2" "$1" -U "$ua"
 }
 
 fetch_files_repo(){
@@ -217,7 +215,8 @@ slient_update_china_iplist() {
 
 silent_update_clash_config() {
 	if [ "$CLASH_CONFIG_UPDATE_ENABLED" = 1 ] && [ "$CLASH_CONFIG_UPDATE_URL" != "" ]; then
-		download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml"
+		[ -z "$CLASH_CONFIG_UPDATE_UA" ] && download_ua="nftclash-download/config-update-silent" || download_ua=$CLASH_CONFIG_UPDATE_UA
+		download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml" "$download_ua"
 		chmod 777 "$CLASH_HOME_DIR/config.yaml"
 		clash_api_put "http://127.0.0.1:${clash_api_port}/configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" &> /dev/null
 	fi
@@ -226,7 +225,8 @@ silent_update_clash_config() {
 update_clash_config() {
 	if [ "$CLASH_CONFIG_UPDATE_ENABLED" = 1 ] && [ "$CLASH_CONFIG_UPDATE_URL" != "" ]; then
 		echo -e "${BLUE}UPDATE CLASH CONFIG${NOCOLOR}"
-		download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml"
+		[ -z "$CLASH_CONFIG_UPDATE_UA" ] && download_ua="nftclash-download/config-update" || download_ua=$CLASH_CONFIG_UPDATE_UA
+		download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml" "$download_ua"
 		chmod 777 "$CLASH_HOME_DIR/config.yaml"
 		echo -e "${BLUE}RELOAD CONFIG${NOCOLOR}"
 		clash_api_put "http://127.0.0.1:${clash_api_port}/configs?force=true" "{\"path\":\"\",\"payload\":\"\"}"
