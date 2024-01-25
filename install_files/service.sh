@@ -230,6 +230,7 @@ update_clash_config() {
 		chmod 777 "$CLASH_HOME_DIR/config.yaml"
 		echo -e "${BLUE}RELOAD CONFIG${NOCOLOR}"
 		clash_api_put "http://127.0.0.1:${clash_api_port}/configs?force=true" "{\"path\":\"\",\"payload\":\"\"}"
+		echo -e "${GREEN}UPDATE CLASH CONFIG DONE!!!${NOCOLOR}"
 	else
 		echo -e "${YELLOW}no update needed!${NOCOLOR}"
 	fi
