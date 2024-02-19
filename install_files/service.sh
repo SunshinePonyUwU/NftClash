@@ -574,7 +574,9 @@ init_fw() {
 
 	echo -e "${BLUE}INIT TPROXY${NOCOLOR}"
 
-	nft add rule inet nftclash prerouting meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
+	# nft add rule inet nftclash prerouting meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
+	nft add rule inet nftclash prerouting tcp dport { 0-65535 } mark set $fwmark tproxy to :$tproxy_port
+	nft add rule inet nftclash prerouting udp dport { 0-65535 } mark set $fwmark tproxy to :$tproxy_port
 
 	[ "$DNS_REDIRECT" = 1 ] && init_fw_dns
 
