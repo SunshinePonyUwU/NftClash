@@ -62,6 +62,8 @@ init_config() {
 		touch $CONFIG_PATH
 		echo "Generating default config"
 		set_config DNS_REDIRECT 0
+		set_config BYPASS_SOURCE_PORT_ENABLED 0
+		set_config BYPASS_SOURCE_PORT_LIST "0-49151"
 		set_config PROXY_COMMON_PORT_ENABLED 0
 		set_config PROXY_COMMON_PORT_LIST "22,53,80,123,143,194,443,465,587,853,993,995,5222,8080,8443"
 		set_config BYPASS_CN_IP_ENABLED 1
@@ -79,6 +81,8 @@ init_config() {
 	fi
 
 	[ -z "$DNS_REDIRECT" ] && DNS_REDIRECT=0
+	[ -z "$BYPASS_SOURCE_PORT_ENABLED" ] && BYPASS_SOURCE_PORT_ENABLED=0
+	[ -z "$BYPASS_SOURCE_PORT_LIST" ] && BYPASS_SOURCE_PORT_LIST="0-49151"
 	[ -z "$PROXY_COMMON_PORT_ENABLED" ] && PROXY_COMMON_PORT_ENABLED=0
 	[ -z "$PROXY_COMMON_PORT_LIST" ] && PROXY_COMMON_PORT_LIST="22,53,80,123,143,194,443,465,587,853,993,995,5222,8080,8443"
 	[ -z "$BYPASS_CN_IP_ENABLED" ] && BYPASS_CN_IP_ENABLED=1
@@ -558,6 +562,14 @@ init_fw() {
 	nft add rule inet nftclash prerouting ip6 daddr {$RESERVED_IP6} return
 
 	init_mac_list
+
+	[ "$BYPASS_SOURCE_PORT_ENABLED" = 1 ] && {
+		SOURCE_PORT_LIST=$(echo $BYPASS_SOURCE_PORT_LIST | sed 's/,/, /g')
+		[ -n "$SOURCE_PORT_LIST" ] && {
+			nft add rule inet nftclash prerouting tcp sport {$SOURCE_PORT_LIST} return
+			nft add rule inet nftclash prerouting udp sport {$SOURCE_PORT_LIST} return
+		}
+	}
 
 	[ "$PROXY_COMMON_PORT_ENABLED" = 1 ] && {
 		COMMON_PORT_LIST=$(echo $PROXY_COMMON_PORT_LIST | sed 's/,/, /g')
