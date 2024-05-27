@@ -74,7 +74,7 @@ init_config() {
 		set_config LOCAL_PROXY_BYPASS_53 0
 		set_config BYPASS_53_TCP 0
 		set_config BYPASS_53_UDP 0
-  		set_config REJECT_443_QUIC 0
+  		set_config REJECT_QUIC 0
 		set_config CLASH_CONFIG_UPDATE_ENABLED 0
 		set_config CLASH_CONFIG_UPDATE_URL ""
 		set_config CLASH_CONFIG_UPDATE_UA ""
@@ -94,7 +94,7 @@ init_config() {
 	[ -z "$LOCAL_PROXY_BYPASS_53" ] && LOCAL_PROXY_BYPASS_53=0
 	[ -z "$BYPASS_53_TCP" ] && BYPASS_53_TCP=0
 	[ -z "$BYPASS_53_UDP" ] && BYPASS_53_UDP=0
- 	[ -X "$REJECT_443_QUIC" ] && REJECT_443_QUIC=0
+ 	[ -X "$REJECT_QUIC" ] && REJECT_QUIC=0
 	[ -z "$CLASH_CONFIG_UPDATE_ENABLED" ] && CLASH_CONFIG_UPDATE_ENABLED=0
 	[ -z "$CLASH_CONFIG_UPDATE_URL" ] && CLASH_CONFIG_UPDATE_URL=""
 	[ -z "$CLASH_CONFIG_UPDATE_UA" ] && CLASH_CONFIG_UPDATE_UA=""
@@ -588,7 +588,7 @@ init_fw() {
 
 	echo -e "${BLUE}INIT TPROXY${NOCOLOR}"
 
-	[ "$REJECT_443_QUIC" = 1 ] && nft add rule inet nftclash prerouting udp dport 443 reject
+	[ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash prerouting udp dport { 443, 8443 }reject
 	nft add rule inet nftclash prerouting meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
 
 	[ "$DNS_REDIRECT" = 1 ] && init_fw_dns
@@ -617,7 +617,7 @@ init_fw() {
 
 	[ "$LOCAL_PROXY_IPV6" = 0 ] && nft add rule inet nftclash output meta nfproto ipv6 return
 
-	[ "$REJECT_443_QUIC" = 1 ] && nft add rule inet nftclash output udp dport 443 reject
+	[ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash output udp dport { 443, 8443 } reject
 	nft add rule inet nftclash output meta l4proto tcp mark set $fwmark redirect to $redir_port
 	echo -e "${BLUE}INIT FIREWALL_RULES DONE!${NOCOLOR}"
 }
