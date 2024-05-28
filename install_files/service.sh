@@ -440,12 +440,7 @@ init_cn_ip_bypass() {
 		if [ -n "$(grep -v '^$' "$DIR/ipset/china_ip_list.txt")" ]; then
 			echo -e "${BLUE}INIT CN_IP BYPASS${NOCOLOR}"
 			CN_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")
-			nft add element inet nftclash cn_ip {$CN_IP} && \
-			if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
-				nft add rule inet nftclash prerouting ip daddr @cn_ip ip daddr != @proxy_ip return
-			else
-				nft add rule inet nftclash prerouting ip daddr @cn_ip return
-			fi
+			nft add element inet nftclash cn_ip {$CN_IP}
 		else
 			echo -e "${YELLOW}china_ip_list.txt is empty!!!${NOCOLOR}"
 			set_config VERSION_CHINA_IPLIST 0 "$VERSION_PATH"
@@ -462,12 +457,7 @@ init_cn_ipv6_bypass() {
 		if [ -n "$(grep -v '^$' "$DIR/ipset/china_ipv6_list.txt")" ]; then
 			echo -e "${BLUE}INIT CN_IP6 BYPASS${NOCOLOR}"
 			CN_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")
-			nft add element inet nftclash cn_ip6 {$CN_IP6} && \
-			if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
-				nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 ip6 daddr != @proxy_ip6 return
-			else
-				nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 return
-			fi
+			nft add element inet nftclash cn_ip6 {$CN_IP6}
 		else
 			echo -e "${YELLOW}china_ipv6_list.txt is empty!!!${NOCOLOR}"
 			set_config VERSION_CHINA_IPLIST 0 "$VERSION_PATH"
@@ -527,14 +517,24 @@ init_fw_bypass() {
 			echo -e "${RED}version file is missing!!!${NOCOLOR}"
 		fi
 		# IPv4 Rules
-		nft add set inet nftclash cn_ip { type ipv4_addr\; flags interval\; }
+		nft add set inet nftclash cn_ip { type ipv4_addr\; flags interval\; } && \
+		if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
+			nft add rule inet nftclash prerouting ip daddr @cn_ip ip daddr != @proxy_ip return
+		else
+			nft add rule inet nftclash prerouting ip daddr @cn_ip return
+		fi
 		if [ "$VERSION_CHINA_IPLIST" = 0 ] || [ -z "$VERSION_CHINA_IPLIST" ]; then
 			download_china_ip_list &
 		else
 			init_cn_ip_bypass
 		fi
 		# IPv6 Rules
-		nft add set inet nftclash cn_ip6 { type ipv6_addr\; flags interval\; }
+		nft add set inet nftclash cn_ip6 { type ipv6_addr\; flags interval\; } && \
+		if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
+			nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 ip6 daddr != @proxy_ip6 return
+		else
+			nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 return
+		fi
 		if [ "$VERSION_CHINA_IPLIST" = 0 ] || [ -z "$VERSION_CHINA_IPLIST" ]; then
 			download_china_ipv6_list &
 		else
