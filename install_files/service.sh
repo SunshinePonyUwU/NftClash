@@ -170,7 +170,7 @@ init_clash_api() {
 	api_listen_ip=$(echo $clash_api_listen | cut -d ":" -f 1)
 	api_listen_port=$(echo $clash_api_listen | cut -d ":" -f 2)
 	if command -v curl >/dev/null 2>&1; then
-		if [ -z "$api_listen_port" ] || [ "$api_listen_ip" == "0.0.0.0" ]; then
+		if [ -n "$api_listen_port" ] && { [ -z "$api_listen_ip" ] || [ "$api_listen_ip" == "0.0.0.0" ]; }; then
 			CLASH_API_AVAILABLE=1
 			clash_api_port=$api_listen_port
 		else
