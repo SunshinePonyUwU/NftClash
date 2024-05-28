@@ -170,7 +170,7 @@ init_clash_api() {
 	api_listen_ip=$(echo $clash_api_listen | cut -d ":" -f 1)
 	api_listen_port=$(echo $clash_api_listen | cut -d ":" -f 2)
 	if command -v curl >/dev/null 2>&1; then
-		if [ -z "$api_listen_ip" ] || [ "$api_listen_port" == "0.0.0.0" ]; then
+		if [ -z "$api_listen_port" ] || [ "$api_listen_ip" == "0.0.0.0" ]; then
 			CLASH_API_AVAILABLE=1
 			clash_api_port=$api_listen_port
 		else
@@ -681,6 +681,8 @@ init_started() {
 	echo -e "${YELLOW}WAITTING FOR CLASH API${NOCOLOR}"
 	clash_api_config_restore
 	echo -e "${GREEN}API_URL: ${NOCOLOR}http://${host_ipv4}:${clash_api_port}${NOCOLOR}"
+	clash_api_version
+	echo -e "${GREEN}CLASH_VERSION: ${NOCOLOR}${clash_version}${NOCOLOR}"
 	add_crontab
 	echo -e "${BLUE}CLASH SERVICE STARTED${NOCOLOR}"
 }
