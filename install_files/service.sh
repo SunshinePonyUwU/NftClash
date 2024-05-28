@@ -681,8 +681,8 @@ init_started() {
 	echo -e "${YELLOW}WAITTING FOR CLASH API${NOCOLOR}"
 	clash_api_config_restore
 	echo -e "${GREEN}API_URL: ${NOCOLOR}http://${host_ipv4}:${clash_api_port}${NOCOLOR}"
-	clash_api_version
-	echo -e "${GREEN}CLASH_VERSION: ${NOCOLOR}${clash_version}${NOCOLOR}"
+	# clash_api_version
+	# echo -e "${GREEN}CLASH_VERSION: ${NOCOLOR}${clash_version}${NOCOLOR}"
 	add_crontab
 	echo -e "${BLUE}CLASH SERVICE STARTED${NOCOLOR}"
 }
