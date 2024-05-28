@@ -148,11 +148,11 @@ clash_api_config_save() {
 }
 
 clash_api_config_restore() {
-	i=1
-	while [ -z "$test" -a "$i" -lt 20 ];do
+	test=1
+	while [ -z "$clash_api_ready" -a "$test" -lt 30 ];do
 		sleep 1
-		test=$(curl -s http://127.0.0.1:${clash_api_port} &> /dev/null)
-		i=$((i+1))
+		clash_api_ready=$(clash_api_get http://127.0.0.1:${clash_api_port})
+		test=$((test+1))
 	done
 	num=$(cat $DIR/proxies | wc -l)
 	i=1
@@ -311,6 +311,51 @@ check_update() {
 	fi
 }
 
+download_china_ip_list() {
+	test=1
+	while [ -z "$clash_api_ready" -a "$test" -lt 30 ];do
+		sleep 1
+		clash_api_ready=$(curl -s $FILES_REPO_URL)
+		test=$((test+1))
+	done
+	echo -e "${YELLOW}china_ip_list.txt does not exist!!!${NOCOLOR}"
+	wget -O "$DIR/ipset/china_ip_list.txt" "$FILES_REPO_URL/china_ip_list.txt"
+	if [ "$?" = "0" ]; then
+		update_china_iplist_version
+		chmod 777 "$DIR/ipset/china_ip_list.txt"
+		init_cn_ip_bypass
+	else
+		echo -e "${RED}china_ip_list.txt download failed!!!${NOCOLOR}"
+	fi
+}
+
+download_china_ipv6_list() {
+	test=1
+	while [ -z "$clash_api_ready" -a "$test" -lt 30 ];do
+		sleep 1
+		clash_api_ready=$(curl -s $FILES_REPO_URL)
+		test=$((test+1))
+	done
+	echo -e "${YELLOW}china_ipv6_list.txt does not exist!!!${NOCOLOR}"
+	wget -O "$DIR/ipset/china_ipv6_list.txt" "$FILES_REPO_URL/china_ipv6_list.txt"
+	if [ "$?" = "0" ]; then
+		update_china_iplist_version
+		chmod 777 "$DIR/ipset/china_ipv6_list.txt"
+		init_cn_ipv6_bypass
+	else
+		echo -e "${RED}china_ipv6_list.txt download failed!!!${NOCOLOR}"
+	fi
+}
+
+update_china_iplist_version() {
+	update_data=$(fetch_files_repo "/update.json")
+	[ -z "$update_data" ] && {
+		echo -e "${RED}UPDATE CHECK FAILED!!!${NOCOLOR}"
+	}
+	latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
+	set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
+}
+
 init_mac_list() {
 	case $MAC_LIST_MODE in
 	1)  # White List Mode
@@ -395,7 +440,6 @@ init_cn_ip_bypass() {
 		if [ -n "$(grep -v '^$' "$DIR/ipset/china_ip_list.txt")" ]; then
 			echo -e "${BLUE}INIT CN_IP BYPASS${NOCOLOR}"
 			CN_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")
-			nft add set inet nftclash cn_ip { type ipv4_addr\; flags interval\; } && \
 			nft add element inet nftclash cn_ip {$CN_IP} && \
 			if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
 				nft add rule inet nftclash prerouting ip daddr @cn_ip ip daddr != @proxy_ip return
@@ -418,7 +462,6 @@ init_cn_ipv6_bypass() {
 		if [ -n "$(grep -v '^$' "$DIR/ipset/china_ipv6_list.txt")" ]; then
 			echo -e "${BLUE}INIT CN_IP6 BYPASS${NOCOLOR}"
 			CN_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")
-			nft add set inet nftclash cn_ip6 { type ipv6_addr\; flags interval\; } && \
 			nft add element inet nftclash cn_ip6 {$CN_IP6} && \
 			if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
 				nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 ip6 daddr != @proxy_ip6 return
@@ -484,40 +527,18 @@ init_fw_bypass() {
 			echo -e "${RED}version file is missing!!!${NOCOLOR}"
 		fi
 		# IPv4 Rules
+		nft add set inet nftclash cn_ip { type ipv4_addr\; flags interval\; }
 		if [ "$VERSION_CHINA_IPLIST" = 0 ] || [ -z "$VERSION_CHINA_IPLIST" ]; then
-			echo -e "${YELLOW}china_ip_list.txt does not exist!!!${NOCOLOR}"
-			wget -O "$DIR/ipset/china_ip_list.txt" "$FILES_REPO_URL/china_ip_list.txt"
-			if [ "$?" = "0" ]; then
-				china_ip_list_downloaded=1
-				chmod 777 "$DIR/ipset/china_ip_list.txt"
-				init_cn_ip_bypass
-			else
-				echo -e "${RED}china_ip_list.txt download failed!!!${NOCOLOR}"
-			fi
+			download_china_ip_list &
 		else
 			init_cn_ip_bypass
 		fi
 		# IPv6 Rules
+		nft add set inet nftclash cn_ip6 { type ipv6_addr\; flags interval\; }
 		if [ "$VERSION_CHINA_IPLIST" = 0 ] || [ -z "$VERSION_CHINA_IPLIST" ]; then
-			echo -e "${YELLOW}china_ipv6_list.txt does not exist!!!${NOCOLOR}"
-			wget -O "$DIR/ipset/china_ipv6_list.txt" "$FILES_REPO_URL/china_ipv6_list.txt"
-			if [ "$?" = "0" ]; then
-				china_ipv6_list_downloaded=1
-				chmod 777 "$DIR/ipset/china_ipv6_list.txt"
-				init_cn_ipv6_bypass
-			else
-				echo -e "${RED}china_ipv6_list.txt download failed!!!${NOCOLOR}"
-			fi
+			download_china_ipv6_list &
 		else
 			init_cn_ipv6_bypass
-		fi
-		if [ -n "$china_ip_list_downloaded" ] && [ -n "$china_ipv6_list_downloaded" ]; then
-			update_data=$(fetch_files_repo "/update.json")
-			[ -z "$update_data" ] && {
-				echo -e "${RED}UPDATE CHECK FAILED!!!${NOCOLOR}"
-			}
-			latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
-			set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
 		fi
 	fi
 }
@@ -678,13 +699,10 @@ init_started() {
 	fi
 	init_config
 	init_fw
-	echo -e "${YELLOW}WAITTING FOR CLASH API${NOCOLOR}"
-	clash_api_config_restore
 	echo -e "${GREEN}API_URL: ${NOCOLOR}http://${host_ipv4}:${clash_api_port}${NOCOLOR}"
-	# clash_api_version
-	# echo -e "${GREEN}CLASH_VERSION: ${NOCOLOR}${clash_version}${NOCOLOR}"
 	add_crontab
 	echo -e "${BLUE}CLASH SERVICE STARTED${NOCOLOR}"
+	clash_api_config_restore &
 }
 
 flush_fw() {
