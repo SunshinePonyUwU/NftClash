@@ -598,6 +598,14 @@ init_fw() {
 		}
 	}
 
+ 	[ "$BYPASS_DEST_PORT_ENABLED" = 1 ] && {
+		DEST_PORT_LIST=$(echo $BYPASS_DEST_PORT_LIST | sed 's/,/, /g')
+		[ -n "$DEST_PORT_LIST" ] && {
+			nft add rule inet nftclash prerouting tcp dport {$DEST_PORT_LIST} return
+			nft add rule inet nftclash prerouting udp dport {$DEST_PORT_LIST} return
+		}
+	}
+
 	[ "$PROXY_COMMON_PORT_ENABLED" = 1 ] && {
 		COMMON_PORT_LIST=$(echo $PROXY_COMMON_PORT_LIST | sed 's/,/, /g')
 		[ -n "$COMMON_PORT_LIST" ] && {
