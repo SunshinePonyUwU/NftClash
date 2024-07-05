@@ -68,6 +68,7 @@ init_config() {
 		set_config BYPASS_DEST_PORT_LIST "123,3478-3479"
 		set_config PROXY_COMMON_PORT_ENABLED 0
 		set_config PROXY_COMMON_PORT_LIST "22,53,80,123,143,194,443,465,587,853,993,995,5222,8080,8443"
+		set_config PROXY_COMMON_PORT_MAC_LIST_ENABLED 0
 		set_config BYPASS_CN_IP_ENABLED 1
 		set_config BYPASS_PASS_IP_ENABLED 1
 		set_config FORCE_PROXY_IP_ENABLED 1
@@ -90,6 +91,7 @@ init_config() {
 	[ -z "$BYPASS_DEST_PORT_LIST" ] && BYPASS_DEST_PORT_LIST="123,3478-3479"
 	[ -z "$PROXY_COMMON_PORT_ENABLED" ] && PROXY_COMMON_PORT_ENABLED=0
 	[ -z "$PROXY_COMMON_PORT_LIST" ] && PROXY_COMMON_PORT_LIST="22,53,80,123,143,194,443,465,587,853,993,995,5222,8080,8443"
+	[ -z "$PROXY_COMMON_PORT_MAC_LIST_ENABLED" ] && PROXY_COMMON_PORT_MAC_LIST_ENABLED=0
 	[ -z "$BYPASS_CN_IP_ENABLED" ] && BYPASS_CN_IP_ENABLED=1
 	[ -z "$BYPASS_PASS_IP_ENABLED" ] && BYPASS_PASS_IP_ENABLED=1
 	[ -z "$FORCE_PROXY_IP_ENABLED" ] && FORCE_PROXY_IP_ENABLED=1
@@ -371,6 +373,10 @@ init_mac_list() {
 		init_mac_black_list
 		;;
 	esac
+	if [ "$PROXY_COMMON_PORT_MAC_LIST_ENABLED" = 1 ]; then
+		[ ! -e "$DIR/ruleset/proxy_common_port_ether_list.txt" ] && touch "$DIR/ruleset/proxy_common_port_ether_list.txt"
+		[ "$PROXY_COMMON_PORT_ENABLED" = 1 ] && init_proxy_common_port_mac_list
+	fi
 }
 
 init_mac_white_list() {
@@ -390,6 +396,20 @@ init_mac_black_list() {
 	if [ -n "$(grep -v '^$' "$DIR/ruleset/ether_black_list.txt")" ]; then
 		MAC_BLACK_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/ether_black_list.txt")
 		nft add element inet nftclash ether_list {$MAC_BLACK_LIST}
+	fi
+}
+
+init_proxy_common_port_mac_list() {
+	echo -e "${BLUE}INIT PROXY_COMMON_PORT_MAC_LIST${NOCOLOR}"
+	COMMON_PORT_LIST=$(echo $PROXY_COMMON_PORT_LIST | sed 's/,/, /g')
+	nft add set inet nftclash proxy_common_port_ether_list { type ether_addr\; } && \
+	[ -n "$COMMON_PORT_LIST" ] && {
+		nft add rule inet nftclash prerouting ether saddr @proxy_common_port_ether_list tcp dport != {$COMMON_PORT_LIST} return
+		nft add rule inet nftclash prerouting ether saddr @proxy_common_port_ether_list udp dport != {$COMMON_PORT_LIST} return
+	}
+	if [ -n "$(grep -v '^$' "$DIR/ruleset/proxy_common_port_ether_list.txt")" ]; then
+		PROXY_COMMON_PORT_MAC_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/proxy_common_port_ether_list.txt")
+		nft add element inet nftclash proxy_common_port_ether_list {$PROXY_COMMON_PORT_MAC_LIST}
 	fi
 }
 
