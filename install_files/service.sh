@@ -626,7 +626,7 @@ init_fw() {
 		}
 	}
 
-	[ "$PROXY_COMMON_PORT_ENABLED" = 1 ] && {
+	[ "$PROXY_COMMON_PORT_MAC_LIST_ENABLED" = 0 ] && [ "$PROXY_COMMON_PORT_ENABLED" = 1 ] && {
 		COMMON_PORT_LIST=$(echo $PROXY_COMMON_PORT_LIST | sed 's/,/, /g')
 		[ -n "$COMMON_PORT_LIST" ] && {
 			nft add rule inet nftclash prerouting tcp dport != {$COMMON_PORT_LIST} return
