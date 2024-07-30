@@ -756,6 +756,11 @@ case "$1" in
 		init_config
 		init_fw
 		;;
+	reinit_fw)
+		flush_fw
+		init_config
+		init_fw
+		;;
 	flush_fw)
 		flush_fw
 		;;
