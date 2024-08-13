@@ -736,7 +736,7 @@ init_started() {
 	echo -e "${GREEN}API_URL: ${NOCOLOR}http://${host_ipv4}:${clash_api_port}${NOCOLOR}"
 	add_crontab
 	echo -e "${BLUE}CLASH SERVICE STARTED${NOCOLOR}"
-	clash_api_config_restore &
+	[ "$CLASH_CONFIG_AUTOSAVE" = 1 ] && clash_api_config_restore &
 }
 
 flush_fw() {
