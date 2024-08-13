@@ -64,7 +64,7 @@ init_config() {
 		set_config DNS_REDIRECT 0
 		set_config BYPASS_SOURCE_PORT_ENABLED 0
 		set_config BYPASS_SOURCE_PORT_LIST "0-1024,8000-8880,9000-9990,19132-19133,25565"
-  	set_config BYPASS_DEST_PORT_ENABLED 0
+		set_config BYPASS_DEST_PORT_ENABLED 0
 		set_config BYPASS_DEST_PORT_LIST "123,3478-3479"
 		set_config PROXY_COMMON_PORT_ENABLED 0
 		set_config PROXY_COMMON_PORT_LIST "22,53,80,123,143,194,443,465,587,853,993,995,5222,8080,8443"
@@ -77,10 +77,11 @@ init_config() {
 		set_config LOCAL_PROXY_BYPASS_53 0
 		set_config BYPASS_53_TCP 0
 		set_config BYPASS_53_UDP 0
-  	set_config REJECT_QUIC 0
+  		set_config REJECT_QUIC 0
 		set_config CLASH_CONFIG_UPDATE_ENABLED 0
 		set_config CLASH_CONFIG_UPDATE_URL ""
 		set_config CLASH_CONFIG_UPDATE_UA ""
+		set_config CLASH_CONFIG_AUTOSAVE 0
 		source $CONFIG_PATH
 	fi
 
@@ -104,6 +105,7 @@ init_config() {
 	[ -z "$CLASH_CONFIG_UPDATE_ENABLED" ] && CLASH_CONFIG_UPDATE_ENABLED=0
 	[ -z "$CLASH_CONFIG_UPDATE_URL" ] && CLASH_CONFIG_UPDATE_URL=""
 	[ -z "$CLASH_CONFIG_UPDATE_UA" ] && CLASH_CONFIG_UPDATE_UA=""
+	[ -z "$CLASH_CONFIG_AUTOSAVE" ] && CLASH_CONFIG_AUTOSAVE=0
 
 	get_clash_config tproxy_port tproxy-port
 	get_clash_config redir_port redir-port
@@ -766,11 +768,11 @@ case "$1" in
 		;;
 	api_config_save)
 		init_clash_api
-		clash_api_config_save
+		[ "$CLASH_CONFIG_AUTOSAVE" = 1 ] && clash_api_config_save
 		;;
 	api_config_restore)
 		init_clash_api
-		clash_api_config_restore
+		[ "$CLASH_CONFIG_AUTOSAVE" = 1 ] && clash_api_config_restore
 		;;
 	check_update)
 		init_config
