@@ -78,11 +78,10 @@ init_config() {
 		set_config LOCAL_PROXY_BYPASS_53 0
 		set_config BYPASS_53_TCP 0
 		set_config BYPASS_53_UDP 0
-  		set_config REJECT_QUIC 0
+  	set_config REJECT_QUIC 0
 		set_config CLASH_CONFIG_UPDATE_ENABLED 0
 		set_config CLASH_CONFIG_UPDATE_URL ""
 		set_config CLASH_CONFIG_UPDATE_UA ""
-		set_config CLASH_CONFIG_AUTOSAVE 0
 		source $CONFIG_PATH
 	fi
 
@@ -106,7 +105,6 @@ init_config() {
 	[ -z "$CLASH_CONFIG_UPDATE_ENABLED" ] && CLASH_CONFIG_UPDATE_ENABLED=0
 	[ -z "$CLASH_CONFIG_UPDATE_URL" ] && CLASH_CONFIG_UPDATE_URL=""
 	[ -z "$CLASH_CONFIG_UPDATE_UA" ] && CLASH_CONFIG_UPDATE_UA=""
-	[ -z "$CLASH_CONFIG_AUTOSAVE" ] && CLASH_CONFIG_AUTOSAVE=0
 
 	get_clash_config tproxy_port tproxy-port
 	get_clash_config redir_port redir-port
@@ -737,7 +735,6 @@ init_started() {
 	echo -e "${GREEN}API_URL: ${NOCOLOR}http://${host_ipv4}:${clash_api_port}${NOCOLOR}"
 	add_crontab
 	echo -e "${BLUE}CLASH SERVICE STARTED${NOCOLOR}"
-	[ "$CLASH_CONFIG_AUTOSAVE" = 1 ] && clash_api_config_restore &
 }
 
 flush_fw() {
@@ -766,14 +763,6 @@ case "$1" in
 		;;
 	flush_fw)
 		flush_fw
-		;;
-	api_config_save)
-		init_clash_api
-		[ "$CLASH_CONFIG_AUTOSAVE" = 1 ] && clash_api_config_save
-		;;
-	api_config_restore)
-		init_clash_api
-		[ "$CLASH_CONFIG_AUTOSAVE" = 1 ] && clash_api_config_restore
 		;;
 	check_update)
 		init_config
