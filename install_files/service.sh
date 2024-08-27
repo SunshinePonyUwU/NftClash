@@ -15,8 +15,9 @@ VERSION_PATH=$DIR/version
 FILES_REPO_URL="https://raw.githubusercontent.com/SunshinePonyUwU/NftClashFiles/main"
 REPO_URL="https://raw.githubusercontent.com/SunshinePonyUwU/NftClash/main"
 
-reserve_ipv4="0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 100.64.0.0/10 169.254.0.0/16 172.16.0.0/12 192.168.0.0/16 224.0.0.0/4 240.0.0.0/4"
-reserve_ipv6="::/128 ::1/128 ::ffff:0:0/96 64:ff9b::/96 100::/64 2001::/32 2001:20::/28 2001:db8::/32 2002::/16 fc00::/7 fe80::/10 ff00::/8"
+# https://en.wikipedia.org/wiki/Reserved_IP_addresses
+reserved_ipv4="0.0.0.0/8 10.0.0.0/8 100.64.0.0/10 127.0.0.0/8 169.254.0.0/16 172.16.0.0/12 192.0.0.0/24 192.0.2.0/24 192.88.99.0/24 192.168.0.0/16 198.18.0.0/15 198.51.100.0/24 203.0.113.0/24 224.0.0.0/4 240.0.0.0/4 255.255.255.255/32"
+reserved_ipv6="::/128 ::1/128 ::ffff:0:0/96 ::ffff:0:0:0/96 64:ff9b::/96 64:ff9b:1::/48 100::/64 2001::/32 2001:20::/28 2001:db8::/32 2002::/16 3fff::/20 5f00::/16 fc00::/7 fe80::/10 ff00::/8"
 host_ipv4=$(ubus call network.interface.lan status 2>&1 | grep \"address\" | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}';)
 
 check_command() {
@@ -605,8 +606,8 @@ init_fw() {
 	ip -6 rule add fwmark $fwmark table 101 2> /dev/null
 	ip -6 route add local ::/0 dev lo table 101 2> /dev/null
 
-	RESERVED_IP="$(echo $reserve_ipv4 | sed 's/ /, /g')"
-	RESERVED_IP6="$(echo $reserve_ipv6 | sed 's/ /, /g')"
+	RESERVED_IP="$(echo $reserved_ipv4 | sed 's/ /, /g')"
+	RESERVED_IP6="$(echo $reserved_ipv6 | sed 's/ /, /g')"
 	nft add rule inet nftclash prerouting ip daddr {$RESERVED_IP} return
 	nft add rule inet nftclash prerouting ip6 daddr {$RESERVED_IP6} return
 
