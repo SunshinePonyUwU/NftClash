@@ -642,7 +642,7 @@ init_fw() {
 
 	echo -e "${BLUE}INIT TPROXY${NOCOLOR}"
 
-	[ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash prerouting udp dport { 443, 8443 }reject
+	[ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash prerouting udp dport { 443, 8443 } reject
 	nft add rule inet nftclash prerouting meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
 
 	[ "$DNS_REDIRECT" = 1 ] && init_fw_dns
