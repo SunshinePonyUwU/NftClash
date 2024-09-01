@@ -73,6 +73,7 @@ init_config() {
 		set_config BYPASS_CN_IP_ENABLED 1
 		set_config BYPASS_PASS_IP_ENABLED 1
 		set_config FORCE_PROXY_IP_ENABLED 1
+		set_config SOURCE_IP_LIST_MODE 0
 		set_config MAC_LIST_MODE 0
 		set_config LOCAL_PROXY_IPV6 0
 		set_config LOCAL_PROXY_BYPASS_53 0
@@ -96,6 +97,7 @@ init_config() {
 	[ -z "$BYPASS_CN_IP_ENABLED" ] && BYPASS_CN_IP_ENABLED=1
 	[ -z "$BYPASS_PASS_IP_ENABLED" ] && BYPASS_PASS_IP_ENABLED=1
 	[ -z "$FORCE_PROXY_IP_ENABLED" ] && FORCE_PROXY_IP_ENABLED=1
+	[ -z "$SOURCE_IP_LIST_MODE" ] && SOURCE_IP_LIST_MODE=0
 	[ -z "$MAC_LIST_MODE" ] && MAC_LIST_MODE=0
 	[ -z "$LOCAL_PROXY_IPV6" ] && LOCAL_PROXY_IPV6=0
 	[ -z "$LOCAL_PROXY_BYPASS_53" ] && LOCAL_PROXY_BYPASS_53=0
@@ -363,6 +365,57 @@ update_china_iplist_version() {
 	set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
 }
 
+init_source_ip_list() {
+	case $SOURCE_IP_LIST_MODE in
+	1)  # White List Mode
+		[ ! -e "$DIR/ruleset/source_ipv4_white_list.txt" ] && touch "$DIR/ruleset/source_ipv4_white_list.txt"
+		[ ! -e "$DIR/ruleset/source_ipv6_white_list.txt" ] && touch "$DIR/ruleset/source_ipv6_white_list.txt"
+		init_source_ip_white_list
+		;;
+	2)  # Black List Mode
+		[ ! -e "$DIR/ruleset/source_ipv4_black_list.txt" ] && touch "$DIR/ruleset/source_ipv4_black_list.txt"
+		[ ! -e "$DIR/ruleset/source_ipv6_black_list.txt" ] && touch "$DIR/ruleset/source_ipv6_black_list.txt"
+		init_source_ip_black_list
+		;;
+	esac
+}
+
+init_source_ip_white_list() {
+	echo -e "${BLUE}INIT SOURCE_IP_WHITE_LIST${NOCOLOR}"
+	nft add set inet nftclash source_ipv4_list { type ipv4_addr\; flags interval\; } && \
+	nft add set inet nftclash source_ipv6_list { type ipv6_addr\; flags interval\; } && \
+	nft add rule inet nftclash prerouting ip saddr != @source_ipv4_list return && \
+	nft add rule inet nftclash prerouting ip6 saddr != @source_ipv6_list return && \
+	{
+		if [ -n "$(grep -v '^$' "$DIR/ruleset/source_ipv4_white_list.txt")" ]; then
+			SOURCE_IPV4_WHITE_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/source_ipv4_white_list.txt")
+			nft add element inet nftclash source_ipv4_list {$SOURCE_IPV4_WHITE_LIST}
+		fi
+		if [ -n "$(grep -v '^$' "$DIR/ruleset/source_ipv6_white_list.txt")" ]; then
+			SOURCE_IPV6_WHITE_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/source_ipv6_white_list.txt")
+			nft add element inet nftclash source_ipv6_list {$SOURCE_IPV6_WHITE_LIST}
+		fi
+	}
+}
+
+init_source_ip_black_list() {
+	echo -e "${BLUE}INIT SOURCE_IP_BLACK_LIST${NOCOLOR}"
+	nft add set inet nftclash source_ipv4_list { type ipv4_addr\; flags interval\; } && \
+	nft add set inet nftclash source_ipv6_list { type ipv6_addr\; flags interval\; } && \
+	nft add rule inet nftclash prerouting ip saddr @source_ipv4_list return && \
+	nft add rule inet nftclash prerouting ip6 saddr @source_ipv6_list return && \
+	{
+		if [ -n "$(grep -v '^$' "$DIR/ruleset/source_ipv4_black_list.txt")" ]; then
+			SOURCE_IPV4_BLACK_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/source_ipv4_black_list.txt")
+			nft add element inet nftclash source_ipv4_list {$SOURCE_IPV4_BLACK_LIST}
+		fi
+		if [ -n "$(grep -v '^$' "$DIR/ruleset/source_ipv6_black_list.txt")" ]; then
+			SOURCE_IPV6_BLACK_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/source_ipv6_black_list.txt")
+			nft add element inet nftclash source_ipv6_list {$SOURCE_IPV6_BLACK_LIST}
+		fi
+	}
+}
+
 init_mac_list() {
 	case $MAC_LIST_MODE in
 	1)  # White List Mode
@@ -609,6 +662,7 @@ init_fw() {
 	nft add rule inet nftclash prerouting ip daddr {$RESERVED_IP} return
 	nft add rule inet nftclash prerouting ip6 daddr {$RESERVED_IP6} return
 
+	init_source_ip_list
 	init_mac_list
 
 	[ "$BYPASS_SOURCE_PORT_ENABLED" = 1 ] && {
