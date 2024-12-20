@@ -371,6 +371,7 @@ process_bypass_fw_rules() {
   for line in $(cat $file); do
   	line=$(echo "$line" | tr -d '\r' | tr -d '\n')
     ipv="ip"
+    ipv6_prefix=0
     if echo "$line" | grep -q "\["; then
       ipv="ip6"
       ip=$(echo "$line" | sed -e 's/^\[\(.*\)\]:.*/\1/')
