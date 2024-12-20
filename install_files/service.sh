@@ -365,6 +365,49 @@ update_china_iplist_version() {
 	set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
 }
 
+process_bypass_fw_rules() {
+  file="$1"
+  rule="$2"
+  for line in $(cat $file); do
+  	line=$(echo "$line" | tr -d '\r' | tr -d '\n')
+    ipv="ip"
+    if echo "$line" | grep -q "\["; then
+      ipv="ip6"
+      ip=$(echo "$line" | sed -e 's/^\[\(.*\)\]:.*/\1/')
+      rest=$(echo "$line" | sed -e 's/^\[.*\]:\([0-9]*\)#\(.*\)/\1#\2/')
+    else
+      ip=$(echo "$line" | sed -e 's/^\([^:]*\):.*/\1/')
+      rest=$(echo "$line" | sed -e 's/^[^:]*:\([0-9]*\)#\(.*\)/\1#\2/')
+    fi
+	if echo "$ip" | grep -q "/"; then
+		ipv6_prefix=1
+	fi
+    port=$(echo "$rest" | cut -d'#' -f1)
+	protocol=$(echo "$rest" | cut -d'#' -f2 | awk '{print tolower($0)}')
+
+	if [ "$ipv6_prefix" = 1 ]; then
+      	ip_part1=$(echo "$ip" | cut -d'/' -f1)
+		ip_part2=$(echo "$ip" | cut -d'/' -f2)
+		ip="& $ip_part2 == $ip_part1"
+	fi
+
+	[ "$rule" = "src" ] && nft add rule inet nftclash prerouting $ipv saddr $ip $protocol sport $port return
+	[ "$rule" = "dest" ] && nft add rule inet nftclash prerouting $ipv daddr $ip $protocol dport $port return
+  done
+}
+
+init_bypass_list() {
+	echo -e "${BLUE}INIT BYPASS_LIST${NOCOLOR}"
+	[ ! -e "$DIR/ruleset/src_ipv4_bypass_list.txt" ] && touch "$DIR/ruleset/src_ipv4_bypass_list.txt"
+	[ ! -e "$DIR/ruleset/src_ipv6_bypass_list.txt" ] && touch "$DIR/ruleset/src_ipv6_bypass_list.txt"
+	process_bypass_fw_rules "$DIR/ruleset/src_ipv4_bypass_list.txt" "src"
+	process_bypass_fw_rules "$DIR/ruleset/src_ipv6_bypass_list.txt" "src"
+	[ ! -e "$DIR/ruleset/dest_ipv4_bypass_list.txt" ] && touch "$DIR/ruleset/dest_ipv4_bypass_list.txt"
+	[ ! -e "$DIR/ruleset/dest_ipv6_bypass_list.txt" ] && touch "$DIR/ruleset/dest_ipv6_bypass_list.txt"
+	process_bypass_fw_rules "$DIR/ruleset/dest_ipv4_bypass_list.txt" "dest"
+	process_bypass_fw_rules "$DIR/ruleset/dest_ipv6_bypass_list.txt" "dest"
+}
+
 init_source_ip_list() {
 	case $SOURCE_IP_LIST_MODE in
 	1)  # White List Mode
@@ -662,6 +705,7 @@ init_fw() {
 	nft add rule inet nftclash prerouting ip daddr {$RESERVED_IP} return
 	nft add rule inet nftclash prerouting ip6 daddr {$RESERVED_IP6} return
 
+	init_bypass_list
 	init_source_ip_list
 	init_mac_list
 
