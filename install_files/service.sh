@@ -531,11 +531,7 @@ init_force_proxy_ipv6() {
 init_pass_ip_bypass() {
 	echo -e "${BLUE}INIT PASS_IP BYPASS${NOCOLOR}"
 	nft add set inet nftclash pass_ip { type ipv4_addr\; flags interval\; } && \
-	if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
-		nft add rule inet nftclash prerouting ip daddr @pass_ip ip daddr != @proxy_ip return
-	else
-		nft add rule inet nftclash prerouting ip daddr @pass_ip return
-	fi
+	nft add rule inet nftclash prerouting ip daddr @pass_ip return
 	if [ -n "$(grep -v '^$' "$DIR/ipset/pass_ip_list.txt")" ]; then
 		PASS_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/pass_ip_list.txt")
 		nft add element inet nftclash pass_ip {$PASS_IP}
@@ -545,11 +541,7 @@ init_pass_ip_bypass() {
 init_pass_ipv6_bypass() {
 	echo -e "${BLUE}INIT PASS_IP6 BYPASS${NOCOLOR}"
 	nft add set inet nftclash pass_ip6 { type ipv6_addr\; flags interval\; } && \
-	if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
-		nft add rule inet nftclash prerouting ip6 daddr @pass_ip6 ip6 daddr != @proxy_ip6 return
-	else
-		nft add rule inet nftclash prerouting ip6 daddr @pass_ip6 return
-	fi
+	nft add rule inet nftclash prerouting ip6 daddr @pass_ip6 return
 	if [ -n "$(grep -v '^$' "$DIR/ipset/pass_ipv6_list.txt")" ]; then
 		PASS_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/pass_ipv6_list.txt")
 		nft add element inet nftclash pass_ip6 {$PASS_IP6}
@@ -610,6 +602,9 @@ init_fw_bypass() {
 			touch "$DIR/ipset/proxy_ipv6_list.txt"
 			init_force_proxy_ipv6
 		fi
+
+		nft add rule inet nftclash prerouting ip daddr @proxy_ip jump transparent_proxy
+		nft add rule inet nftclash prerouting ip6 daddr @proxy_ip6 jump transparent_proxy
 	fi
 	if [ "$BYPASS_PASS_IP_ENABLED" = 1 ]; then
 		# IPv4 Rules
@@ -639,11 +634,7 @@ init_fw_bypass() {
 		fi
 		# IPv4 Rules
 		nft add set inet nftclash cn_ip { type ipv4_addr\; flags interval\; } && \
-		if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
-			nft add rule inet nftclash prerouting ip daddr @cn_ip ip daddr != @proxy_ip return
-		else
-			nft add rule inet nftclash prerouting ip daddr @cn_ip return
-		fi
+		nft add rule inet nftclash prerouting ip daddr @cn_ip return
 		if [ "$VERSION_CHINA_IPLIST" = 0 ] || [ -z "$VERSION_CHINA_IPLIST" ]; then
 			download_china_ip_list &
 		else
@@ -651,11 +642,7 @@ init_fw_bypass() {
 		fi
 		# IPv6 Rules
 		nft add set inet nftclash cn_ip6 { type ipv6_addr\; flags interval\; } && \
-		if [ "$FORCE_PROXY_IP_ENABLED" = 1 ]; then
-			nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 ip6 daddr != @proxy_ip6 return
-		else
-			nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 return
-		fi
+		nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 return
 		if [ "$VERSION_CHINA_IPLIST" = 0 ] || [ -z "$VERSION_CHINA_IPLIST" ]; then
 			download_china_ipv6_list &
 		else
@@ -705,6 +692,12 @@ init_fw() {
 	nft add rule inet nftclash prerouting ip daddr {$RESERVED_IP} return
 	nft add rule inet nftclash prerouting ip6 daddr {$RESERVED_IP6} return
 
+	# Transparent proxy chain
+	nft add chain inet nftclash transparent_proxy
+	echo -e "${BLUE}INIT TPROXY CHAIN${NOCOLOR}"
+	[ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash transparent_proxy udp dport { 443, 8443 } reject
+	nft add rule inet nftclash transparent_proxy meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
+
 	init_bypass_list
 	init_source_ip_list
 	init_mac_list
@@ -738,10 +731,7 @@ init_fw() {
 
 	init_fw_bypass
 
-	echo -e "${BLUE}INIT TPROXY${NOCOLOR}"
-
-	[ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash prerouting udp dport { 443, 8443 } reject
-	nft add rule inet nftclash prerouting meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
+	nft add rule inet nftclash prerouting jump transparent_proxy
 
 	[ "$DNS_REDIRECT" = 1 ] && init_fw_dns
 
