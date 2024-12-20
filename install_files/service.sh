@@ -391,8 +391,8 @@ process_bypass_fw_rules() {
 		ip="& $ip_part2 == $ip_part1"
 	fi
 
-	[ "$rule" = "src" ] && nft add rule inet nftclash prerouting $ipv saddr $ip $protocol sport $port return
-	[ "$rule" = "dest" ] && nft add rule inet nftclash prerouting $ipv daddr $ip $protocol dport $port return
+	[ "$rule" = "src" ] && nft add rule inet nftclash bypass_proxy $ipv saddr $ip $protocol sport $port accept
+	[ "$rule" = "dest" ] && nft add rule inet nftclash bypass_proxy $ipv daddr $ip $protocol dport $port accept
   done
 }
 
@@ -692,13 +692,18 @@ init_fw() {
 	nft add rule inet nftclash prerouting ip daddr {$RESERVED_IP} return
 	nft add rule inet nftclash prerouting ip6 daddr {$RESERVED_IP6} return
 
+	# Bypass proxy chain
+	echo -e "${BLUE}INIT BYPASS PROXY CHAIN${NOCOLOR}"
+	nft add chain inet nftclash bypass_proxy
+	init_bypass_list
+
 	# Transparent proxy chain
-	nft add chain inet nftclash transparent_proxy
 	echo -e "${BLUE}INIT TPROXY CHAIN${NOCOLOR}"
+	nft add chain inet nftclash transparent_proxy
 	[ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash transparent_proxy udp dport { 443, 8443 } reject
 	nft add rule inet nftclash transparent_proxy meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
 
-	init_bypass_list
+	nft add rule inet nftclash prerouting jump bypass_proxy
 	init_source_ip_list
 	init_mac_list
 
