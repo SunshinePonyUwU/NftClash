@@ -748,6 +748,7 @@ init_fw() {
 	nft add rule inet nftclash output meta skgid 7890 return
 	nft add rule inet nftclash output ip daddr {$RESERVED_IP} return
 	nft add rule inet nftclash output ip6 daddr {$RESERVED_IP6} return
+	nft add rule inet nftclash output jump bypass_proxy
 
 	[ "$PROXY_COMMON_PORT_ENABLED" = 1 ] && {
 		COMMON_PORT_LIST=$(echo $PROXY_COMMON_PORT_LIST | sed 's/,/, /g')
