@@ -56,16 +56,24 @@ CHINA IP LIST 更新后無需重啓立即生效
 | 選項 | 默認值 | 可接受的值 | 描述 |
 | :- | :- | :- | :- |
 | DNS_REDIRECT | 0 | 0,1 | 啓用DNS重定向 |
+| BYPASS_SOURCE_PORT_ENABLED | 0 | 0,0 | 繞過指來源標端口 |
+| BYPASS_SOURCE_PORT_LIST | "0-1023,8000-8880" | "PORT,PORT,PORT,..." | 來源端口列表 |
+| BYPASS_DEST_PORT_ENABLED | 0 | 0,0 | 繞過指定目標端口 |
+| BYPASS_DEST_PORT_LIST | "123,3478-3479" | "PORT,PORT,PORT,..." | 目標端口列表 |
 | PROXY_COMMON_PORT_ENABLED | 0 | 0,1 | 僅代理常用端口 |
 | PROXY_COMMON_PORT_LIST | "22,53,80,..." | "PORT,PORT,PORT,..." | 常用端口列表 |
+| PROXY_COMMON_PORT_MAC_LIST_ENABLED | 0 | 0,1 | 僅應用常用端口代理到MAC列表 |
 | BYPASS_CN_IP_ENABLED | 1 | 0,1 | 啓用繞過中國大陸IP |
 | BYPASS_PASS_IP_ENABLED | 1 | 0,1 | 啓用繞過指定IP |
 | FORCE_PROXY_IP_ENABLED | 1 | 0,1 | 啓用代理指定IP |
+| SOURCE_IP_LIST_MODE | 0 | 0,1,2 | 0:禁用功能,1:源IP白名單模式,2:源IP黑名單模式 |
 | MAC_LIST_MODE | 0 | 0,1,2 | 0:禁用功能,1:MAC白名單模式,2:MAC黑名單模式 |
-| LOCAL_PROXY_IPV6 | 0 | 0,1 | 是否代理本機IPV6，和繞過中國大陸IP一起使用避免回環 |
+| LOCAL_PROXY_IPV6 | 0 | 0,1 | 是否代理本機IPV6，不建議在未使用NAT66的情況下啓用 |
 | LOCAL_PROXY_BYPASS_53 | 0 | 0,1 | 本地代理繞過DNS (TCP) |
 | BYPASS_53_TCP | 0 | 0,1 | 不代理DNS (TCP) |
 | BYPASS_53_UDP | 0 | 0,1 | 不代理DNS (UDP) |
+| REJECT_QUIC | 0 | 0,1 | 丟棄QUIC協議數據包 |
+| INIT_CHECKS_ENABLED | 1 | 0,1 | 啓動前檢查，避免出現clash還沒啓動完成的時候無法訪問互聯網 |
 | CLASH_CONFIG_UPDATE_ENABLED | 0 | 0,1 | 是否更新clash配置文件 |
 | CLASH_CONFIG_UPDATE_URL | "" | (URL) | 下載clash配置文件的鏈接 |
 | CLASH_CONFIG_UPDATE_UA | "" | (UA) | 下載clash配置文件時使用的UA |
