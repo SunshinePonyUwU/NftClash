@@ -1,3 +1,4 @@
+#!/bin/sh
 
 BLUE='\033[1;34m'
 YELLOW='\033[1;33m'
@@ -80,6 +81,7 @@ init_config() {
 		set_config BYPASS_53_TCP 0
 		set_config BYPASS_53_UDP 0
 		set_config REJECT_QUIC 0
+		set_config INIT_CHECKS_ENABLED 0
 		set_config CLASH_CONFIG_UPDATE_ENABLED 0
 		set_config CLASH_CONFIG_UPDATE_URL ""
 		set_config CLASH_CONFIG_UPDATE_UA ""
@@ -104,6 +106,7 @@ init_config() {
 	[ -z "$BYPASS_53_TCP" ] && BYPASS_53_TCP=0
 	[ -z "$BYPASS_53_UDP" ] && BYPASS_53_UDP=0
 	[ -z "$REJECT_QUIC" ] && REJECT_QUIC=0
+	[ -z "$INIT_CHECKS_ENABLED" ] && INIT_CHECKS_ENABLED=0
 	[ -z "$CLASH_CONFIG_UPDATE_ENABLED" ] && CLASH_CONFIG_UPDATE_ENABLED=0
 	[ -z "$CLASH_CONFIG_UPDATE_URL" ] && CLASH_CONFIG_UPDATE_URL=""
 	[ -z "$CLASH_CONFIG_UPDATE_UA" ] && CLASH_CONFIG_UPDATE_UA=""
@@ -784,6 +787,10 @@ init_startup() {
 		echo -e "${RED}You need to install jq!!!${NOCOLOR}"
 		exit 1
 	fi
+	if ! command -v curl >/dev/null 2>&1; then
+		echo -e "${RED}You need to install curl!!!${NOCOLOR}"
+		exit 1
+	fi
 	if [ -e "$CLASH_HOME_DIR/clash" ]; then
 		if [ -e "$CLASH_HOME_DIR/config.yaml" ]; then
 			chmod 777 -R "$DIR"
@@ -826,14 +833,37 @@ init_started() {
 		mkdir -p "$TMPDIR"
 	fi
 	init_config
-	init_fw
+	if [ "$INIT_CHECKS_ENABLED" = 1 ]; then
+		CHECK_FAILURE=0
+		CHECK_FAILURE_COUNT=0
+		while [ "$CHECK_FAILURE_COUNT" -le 30 ]; do
+				clash_api_get "http://127.0.0.1:${clash_api_port}"&> /dev/null
+				if [ $? -eq 0 ]; then
+					CHECK_FAILURE=0
+					init_fw
+					break
+				fi
+				CHECK_FAILURE_COUNT=$(( CHECK_FAILURE_COUNT + 1 ))
+				CHECK_FAILURE=1
+				sleep 1
+		done
+		if [ "$CHECK_FAILURE" = 1 ];then
+			echo -e "${RED}CLASH TIMEDOUT!!!${NOCOLOR}"
+			exit 1
+		fi
+	else
+		init_fw
+	fi
 	echo -e "${GREEN}API_URL: ${NOCOLOR}http://${host_ipv4}:${clash_api_port}${NOCOLOR}"
 	echo -e "${BLUE}CLASH SERVICE STARTED${NOCOLOR}"
+	exit 0
 }
 
 flush_fw() {
-	nft flush table inet nftclash
-	nft delete table inet nftclash
+	nft list table inet nftclash&> /dev/null && {
+		nft flush table inet nftclash
+		nft delete table inet nftclash
+	}
 }
 
 case "$1" in
