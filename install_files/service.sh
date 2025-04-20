@@ -368,6 +368,50 @@ update_china_iplist_version() {
 	set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
 }
 
+process_proxy_fw_rules() {
+  file="$1"
+  rule="$2"
+  for line in $(cat $file); do
+  	line=$(echo "$line" | tr -d '\r' | tr -d '\n')
+    ipv="ip"
+    ipv6_prefix=0
+    if echo "$line" | grep -q "\["; then
+      ipv="ip6"
+      ip=$(echo "$line" | sed -e 's/^\[\(.*\)\]:.*/\1/')
+      rest=$(echo "$line" | sed -e 's/^\[.*\]:\([0-9]*\)#\(.*\)/\1#\2/')
+    else
+      ip=$(echo "$line" | sed -e 's/^\([^:]*\):.*/\1/')
+      rest=$(echo "$line" | sed -e 's/^[^:]*:\([0-9]*\)#\(.*\)/\1#\2/')
+    fi
+	if echo "$ip" | grep -q "/"; then
+		ipv6_prefix=1
+	fi
+    port=$(echo "$rest" | cut -d'#' -f1)
+	protocol=$(echo "$rest" | cut -d'#' -f2 | awk '{print tolower($0)}')
+
+	if [ "$ipv6_prefix" = 1 ]; then
+      	ip_part1=$(echo "$ip" | cut -d'/' -f1)
+		ip_part2=$(echo "$ip" | cut -d'/' -f2)
+		ip="& $ip_part2 == $ip_part1"
+	fi
+
+	[ "$rule" = "src" ] && nft add rule inet nftclash force_proxy $ipv saddr $ip $protocol sport $port jump transparent_proxy
+	[ "$rule" = "dest" ] && nft add rule inet nftclash force_proxy $ipv daddr $ip $protocol dport $port jump transparent_proxy
+  done
+}
+
+init_proxy_list() {
+	echo -e "${BLUE}INIT PROXY_LIST${NOCOLOR}"
+	[ ! -e "$DIR/ruleset/src_ipv4_proxy_list.txt" ] && touch "$DIR/ruleset/src_ipv4_proxy_list.txt"
+	[ ! -e "$DIR/ruleset/src_ipv6_proxy_list.txt" ] && touch "$DIR/ruleset/src_ipv6_proxy_list.txt"
+	process_proxy_fw_rules "$DIR/ruleset/src_ipv4_proxy_list.txt" "src"
+	process_proxy_fw_rules "$DIR/ruleset/src_ipv6_proxy_list.txt" "src"
+	[ ! -e "$DIR/ruleset/dest_ipv4_proxy_list.txt" ] && touch "$DIR/ruleset/dest_ipv4_proxy_list.txt"
+	[ ! -e "$DIR/ruleset/dest_ipv6_proxy_list.txt" ] && touch "$DIR/ruleset/dest_ipv6_proxy_list.txt"
+	process_proxy_fw_rules "$DIR/ruleset/dest_ipv4_proxy_list.txt" "dest"
+	process_proxy_fw_rules "$DIR/ruleset/dest_ipv6_proxy_list.txt" "dest"
+}
+
 process_bypass_fw_rules() {
   file="$1"
   rule="$2"
@@ -696,18 +740,26 @@ init_fw() {
 	nft add rule inet nftclash prerouting ip daddr {$RESERVED_IP} return
 	nft add rule inet nftclash prerouting ip6 daddr {$RESERVED_IP6} return
 
-	# Bypass proxy chain
-	echo -e "${BLUE}INIT BYPASS PROXY CHAIN${NOCOLOR}"
-	nft add chain inet nftclash bypass_proxy
-	init_bypass_list
-
 	# Transparent proxy chain
 	echo -e "${BLUE}INIT TPROXY CHAIN${NOCOLOR}"
 	nft add chain inet nftclash transparent_proxy
 	[ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash transparent_proxy udp dport { 443, 8443 } reject
 	nft add rule inet nftclash transparent_proxy meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
 
+	# Force proxy chain
+	echo -e "${BLUE}INIT FORCE PROXY CHAIN${NOCOLOR}"
+	nft add chain inet nftclash force_proxy
+	nft add rule inet nftclash prerouting jump force_proxy
+	init_proxy_list
+
+
+	# Bypass proxy chain
+	echo -e "${BLUE}INIT BYPASS PROXY CHAIN${NOCOLOR}"
+	nft add chain inet nftclash bypass_proxy
 	nft add rule inet nftclash prerouting jump bypass_proxy
+	init_bypass_list
+
+
 	init_source_ip_list
 	init_mac_list
 
