@@ -17,10 +17,10 @@
 
 軟件依賴：
 --
-kmod-nft-tproxy  
-yq  
-jq  
-curl
+- kmod-nft-tproxy
+- yq
+- jq
+- curl
 
 安裝方式：
 --
