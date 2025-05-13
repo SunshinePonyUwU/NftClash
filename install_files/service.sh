@@ -873,12 +873,8 @@ init_startup() {
     fi
   fi
   # env
-  if [ ! -d "$DIR/env" ]; then
-    mkdir -p "$DIR/env"
-  fi
-  if [ ! -e "$DIR/env/SAFE_PATHS" ]; then
-    touch "$DIR/env/SAFE_PATHS"
-  fi
+  [ ! -d "$DIR/env" ] && mkdir -p "$DIR/env"
+  [ ! -e "$DIR/env/SAFE_PATHS" ] && touch "$DIR/env/SAFE_PATHS"
 }
 
 init_started() {
