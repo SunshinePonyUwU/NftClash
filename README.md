@@ -32,7 +32,7 @@
 
 放置可執行文件：
 --
-1. 前往[Mihomo發佈頁](https://github.com/MetaCubeX/mihomo/releases)下載你對應平臺的可執行文件  
+1. 前往[Mihomo發佈頁](https://wiki.metacubex.one/startup/#__tabbed_1_2)下載你對應平臺的可執行文件  
 文件名格式：<u>mihomo-linux-(你的CPU架構)-compatible-xxxx.gz</u>  
 2. 重命名文件為"clash"  
 3. 移動文件到 /etc/nftclash/clash/ 文件夾内 (如果文件夾不存在請手動創建)  
