@@ -872,6 +872,13 @@ init_startup() {
       grep -qw nftclash /etc/passwd || echo "nftclash:x:0:7890:::" >> /etc/passwd
     fi
   fi
+  # env
+  if [ ! -d "$DIR/env" ]; then
+    mkdir -p "$DIR/env"
+  fi
+  if [ ! -e "$DIR/env/SAFE_PATHS" ]; then
+    touch "$DIR/env/SAFE_PATHS"
+  fi
 }
 
 init_started() {
