@@ -68,6 +68,7 @@ init_config() {
   BYPASS_53_TCP=0
   BYPASS_53_UDP=0
   REJECT_QUIC=0
+  REDIECT_ICMP=1
   INIT_CHECKS_ENABLED=1
   CLASH_CONFIG_UPDATE_ENABLED=0
   CLASH_CONFIG_UPDATE_URL=""
@@ -698,7 +699,7 @@ init_fw_dns() {
 init_fw() {
   nft add table inet nftclash
   nft flush table inet nftclash
-  nft add chain inet nftclash prerouting { type nat hook prerouting priority -100 \; }
+  nft add chain inet nftclash prerouting { type filter hook prerouting priority -100 \; }
 
   ip rule add fwmark $fwmark table 100 2> /dev/null
   ip route add local default dev lo table 100 2> /dev/null
@@ -741,7 +742,7 @@ init_fw() {
     }
   }
 
-   [ "$BYPASS_DEST_PORT_ENABLED" = 1 ] && {
+  [ "$BYPASS_DEST_PORT_ENABLED" = 1 ] && {
     DEST_PORT_LIST=$(echo $BYPASS_DEST_PORT_LIST | sed 's/,/, /g')
     [ -n "$DEST_PORT_LIST" ] && {
       nft add rule inet nftclash prerouting tcp dport {$DEST_PORT_LIST} return
