@@ -35,13 +35,6 @@ compare(){
   fi
 }
 
-add_crontab() {
-  crontab -l > $TMPDIR/crontab_tmp
-  grep -q "/etc/nftclash/service.sh api_config_save" $TMPDIR/crontab_tmp || echo "*/10 * * * * pgrep clash && /etc/nftclash/service.sh api_config_save" >> $TMPDIR/crontab_tmp
-  crontab $TMPDIR/crontab_tmp
-  rm $TMPDIR/crontab_tmp
-}
-
 get_clash_config() {
   [ -z "$3" ] && configpath="$CLASH_HOME_DIR/config.yaml" || configpath=$3
   if [ -e "$configpath" ]; then
@@ -151,29 +144,6 @@ clash_api_put(){
 
 clash_api_version() {
   clash_version=$(clash_api_get http://127.0.0.1:${clash_api_port}/version | jq -r .version)
-}
-
-clash_api_config_save() {
-  clash_api_get http://127.0.0.1:${clash_api_port}/proxies | awk -F ':\\{"' '{for(i=1;i<=NF;i++) print $i}' | grep -aE '(^all|^alive)".*"Selector"' > $TMPDIR/clash_api_proxies
-  compare $TMPDIR/clash_api_proxies $DIR/proxies
-  [ "$?" = 0 ] && rm -f $TMPDIR/clash_api_proxies || mv -f $TMPDIR/clash_api_proxies $DIR/proxies
-}
-
-clash_api_config_restore() {
-  test=1
-  while [ -z "$clash_api_ready" -a "$test" -lt 30 ];do
-    sleep 1
-    clash_api_ready=$(clash_api_get http://127.0.0.1:${clash_api_port})
-    test=$((test+1))
-  done
-  num=$(cat $DIR/proxies | wc -l)
-  i=1
-  while [ "$i" -le "$num" ];do
-    group_name=$(awk -F ',' 'NR=="'${i}'" {print $1}' $DIR/proxies | sed 's/ /%20/g')
-    now_name=$(awk -F ',' 'NR=="'${i}'" {print $2}' $DIR/proxies)
-    clash_api_put http://127.0.0.1:${clash_api_port}/proxies/${group_name} "{\"name\":\"${now_name}\"}" &> /dev/null
-    i=$((i+1))
-  done
 }
 
 init_clash_api() {
