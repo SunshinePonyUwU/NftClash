@@ -698,7 +698,7 @@ init_fw_dns() {
 init_fw() {
   nft add table inet nftclash
   nft flush table inet nftclash
-  nft add chain inet nftclash prerouting { type filter hook prerouting priority 0 \; }
+  nft add chain inet nftclash prerouting { type nat hook prerouting priority -100 \; }
 
   ip rule add fwmark $fwmark table 100 2> /dev/null
   ip route add local default dev lo table 100 2> /dev/null
