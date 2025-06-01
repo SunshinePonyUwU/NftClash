@@ -68,7 +68,7 @@ init_config() {
   BYPASS_53_TCP=0
   BYPASS_53_UDP=0
   REJECT_QUIC=0
-  REDIECT_ICMP=1
+  ICMP_REDIRECT=0
   INIT_CHECKS_ENABLED=1
   CLASH_CONFIG_UPDATE_ENABLED=0
   CLASH_CONFIG_UPDATE_URL=""
@@ -98,6 +98,7 @@ init_config() {
     set_config BYPASS_53_TCP $BYPASS_53_TCP
     set_config BYPASS_53_UDP $BYPASS_53_UDP
     set_config REJECT_QUIC $REJECT_QUIC
+    set_config ICMP_REDIRECT $ICMP_REDIRECT
     set_config INIT_CHECKS_ENABLED $INIT_CHECKS_ENABLED
     set_config CLASH_CONFIG_UPDATE_ENABLED $CLASH_CONFIG_UPDATE_ENABLED
     set_config CLASH_CONFIG_UPDATE_URL $CLASH_CONFIG_UPDATE_URL
@@ -700,6 +701,7 @@ init_fw() {
   nft add table inet nftclash
   nft flush table inet nftclash
   nft add chain inet nftclash prerouting { type filter hook prerouting priority -100 \; }
+  nft add chain inet nftclash prerouting_nat { type nat hook prerouting priority -110 \; }
 
   ip rule add fwmark $fwmark table 100 2> /dev/null
   ip route add local default dev lo table 100 2> /dev/null
@@ -717,22 +719,20 @@ init_fw() {
   [ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash transparent_proxy udp dport { 443, 8443 } reject
   nft add rule inet nftclash transparent_proxy meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
 
+  init_source_ip_list
+  init_mac_list
+
   # Force proxy chain
   echo -e "${BLUE}INIT FORCE PROXY CHAIN${NOCOLOR}"
   nft add chain inet nftclash force_proxy
   nft add rule inet nftclash prerouting jump force_proxy
   init_proxy_list
 
-
   # Bypass proxy chain
   echo -e "${BLUE}INIT BYPASS PROXY CHAIN${NOCOLOR}"
   nft add chain inet nftclash bypass_proxy
   nft add rule inet nftclash prerouting jump bypass_proxy
   init_bypass_list
-
-
-  init_source_ip_list
-  init_mac_list
 
   [ "$BYPASS_SOURCE_PORT_ENABLED" = 1 ] && {
     SOURCE_PORT_LIST=$(echo $BYPASS_SOURCE_PORT_LIST | sed 's/,/, /g')
@@ -764,6 +764,11 @@ init_fw() {
   init_fw_bypass
 
   nft add rule inet nftclash prerouting jump transparent_proxy
+
+  [ "$ICMP_REDIRECT" = 1 ] && {
+    nft add rule inet nftclash prerouting_nat meta l4proto icmp redirect
+    nft add rule inet nftclash prerouting_nat meta l4proto ipv6-icmp redirect
+  }
 
   [ "$DNS_REDIRECT" = 1 ] && init_fw_dns
 
