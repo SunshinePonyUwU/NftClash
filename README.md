@@ -92,7 +92,7 @@ CHINA IP LIST 更新后無需重啓立即生效
 | CLASH_CONFIG_UPDATE_URL | "" | (URL) | 下載clash配置文件的鏈接 |
 | CLASH_CONFIG_UPDATE_UA | "" | (UA) | 下載clash配置文件時使用的UA |
 ```shell
-/etc/nftclash/service.sh init_fw
+/etc/nftclash/service.sh reinit_fw
 ```
 修改配置文件後可以使用此命令直接刷新防火牆規則
 
