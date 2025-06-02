@@ -448,7 +448,9 @@ init_source_ip_white_list() {
   nft add set inet nftclash source_ipv4_list { type ipv4_addr\; flags interval\; } && \
   nft add set inet nftclash source_ipv6_list { type ipv6_addr\; flags interval\; } && \
   nft add rule inet nftclash prerouting ip saddr != @source_ipv4_list return && \
+  nft add rule inet nftclash prerouting_nat ip saddr != @source_ipv4_list return && \
   nft add rule inet nftclash prerouting ip6 saddr != @source_ipv6_list return && \
+  nft add rule inet nftclash prerouting_nat ip6 saddr != @source_ipv6_list return && \
   {
     if [ -n "$(grep -v '^$' "$DIR/ruleset/source_ipv4_white_list.txt")" ]; then
       SOURCE_IPV4_WHITE_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/source_ipv4_white_list.txt")
@@ -466,7 +468,9 @@ init_source_ip_black_list() {
   nft add set inet nftclash source_ipv4_list { type ipv4_addr\; flags interval\; } && \
   nft add set inet nftclash source_ipv6_list { type ipv6_addr\; flags interval\; } && \
   nft add rule inet nftclash prerouting ip saddr @source_ipv4_list return && \
+  nft add rule inet nftclash prerouting_nat ip saddr @source_ipv4_list return && \
   nft add rule inet nftclash prerouting ip6 saddr @source_ipv6_list return && \
+  nft add rule inet nftclash prerouting_nat ip6 saddr @source_ipv6_list return && \
   {
     if [ -n "$(grep -v '^$' "$DIR/ruleset/source_ipv4_black_list.txt")" ]; then
       SOURCE_IPV4_BLACK_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/source_ipv4_black_list.txt")
@@ -499,7 +503,8 @@ init_mac_list() {
 init_mac_white_list() {
   echo -e "${BLUE}INIT MAC_WHITE_LIST${NOCOLOR}"
   nft add set inet nftclash ether_list { type ether_addr\; } && \
-  nft add rule inet nftclash prerouting ether saddr != @ether_list return
+  nft add rule inet nftclash prerouting ether saddr != @ether_list return && \
+  nft add rule inet nftclash prerouting_nat ether saddr != @ether_list return
   if [ -n "$(grep -v '^$' "$DIR/ruleset/ether_white_list.txt")" ]; then
     MAC_WHITE_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/ether_white_list.txt")
     nft add element inet nftclash ether_list {$MAC_WHITE_LIST}
@@ -509,7 +514,8 @@ init_mac_white_list() {
 init_mac_black_list() {
   echo -e "${BLUE}INIT MAC_BLACK_LIST${NOCOLOR}"
   nft add set inet nftclash ether_list { type ether_addr\; } && \
-  nft add rule inet nftclash prerouting ether saddr @ether_list return
+  nft add rule inet nftclash prerouting ether saddr @ether_list return && \
+  nft add rule inet nftclash prerouting_nat ether saddr @ether_list return
   if [ -n "$(grep -v '^$' "$DIR/ruleset/ether_black_list.txt")" ]; then
     MAC_BLACK_LIST=$(awk '{printf "%s, ",$1}' "$DIR/ruleset/ether_black_list.txt")
     nft add element inet nftclash ether_list {$MAC_BLACK_LIST}
@@ -551,7 +557,8 @@ init_force_proxy_ipv6() {
 init_pass_ip_bypass() {
   echo -e "${BLUE}INIT PASS_IP BYPASS${NOCOLOR}"
   nft add set inet nftclash pass_ip { type ipv4_addr\; flags interval\; } && \
-  nft add rule inet nftclash prerouting ip daddr @pass_ip return
+  nft add rule inet nftclash prerouting ip daddr @pass_ip return && \
+  nft add rule inet nftclash prerouting_nat ip daddr @pass_ip return
   if [ -n "$(grep -v '^$' "$DIR/ipset/pass_ip_list.txt")" ]; then
     PASS_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/pass_ip_list.txt")
     nft add element inet nftclash pass_ip {$PASS_IP}
@@ -561,7 +568,8 @@ init_pass_ip_bypass() {
 init_pass_ipv6_bypass() {
   echo -e "${BLUE}INIT PASS_IP6 BYPASS${NOCOLOR}"
   nft add set inet nftclash pass_ip6 { type ipv6_addr\; flags interval\; } && \
-  nft add rule inet nftclash prerouting ip6 daddr @pass_ip6 return
+  nft add rule inet nftclash prerouting ip6 daddr @pass_ip6 return && \
+  nft add rule inet nftclash prerouting_nat ip6 daddr @pass_ip6 return
   if [ -n "$(grep -v '^$' "$DIR/ipset/pass_ipv6_list.txt")" ]; then
     PASS_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/pass_ipv6_list.txt")
     nft add element inet nftclash pass_ip6 {$PASS_IP6}
@@ -654,7 +662,8 @@ init_fw_bypass() {
     fi
     # IPv4 Rules
     nft add set inet nftclash cn_ip { type ipv4_addr\; flags interval\; } && \
-    nft add rule inet nftclash prerouting ip daddr @cn_ip return
+    nft add rule inet nftclash prerouting ip daddr @cn_ip return && \
+    nft add rule inet nftclash prerouting_nat ip daddr @cn_ip return
     if [ "$VERSION_CHINA_IPLIST" = 0 ] || [ -z "$VERSION_CHINA_IPLIST" ]; then
       download_china_ip_list &
     else
@@ -662,7 +671,8 @@ init_fw_bypass() {
     fi
     # IPv6 Rules
     nft add set inet nftclash cn_ip6 { type ipv6_addr\; flags interval\; } && \
-    nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 return
+    nft add rule inet nftclash prerouting ip6 daddr @cn_ip6 return && \
+    nft add rule inet nftclash prerouting_nat ip6 daddr @cn_ip6 return
     if [ "$VERSION_CHINA_IPLIST" = 0 ] || [ -z "$VERSION_CHINA_IPLIST" ]; then
       download_china_ipv6_list &
     else
@@ -711,7 +721,9 @@ init_fw() {
   RESERVED_IP="$(echo $reserved_ipv4 | sed 's/ /, /g')"
   RESERVED_IP6="$(echo $reserved_ipv6 | sed 's/ /, /g')"
   nft add rule inet nftclash prerouting ip daddr {$RESERVED_IP} return
+  nft add rule inet nftclash prerouting_nat ip daddr {$RESERVED_IP} return
   nft add rule inet nftclash prerouting ip6 daddr {$RESERVED_IP6} return
+  nft add rule inet nftclash prerouting_nat ip6 daddr {$RESERVED_IP6} return
 
   # Transparent proxy chain
   echo -e "${BLUE}INIT TPROXY CHAIN${NOCOLOR}"
@@ -726,12 +738,14 @@ init_fw() {
   echo -e "${BLUE}INIT FORCE PROXY CHAIN${NOCOLOR}"
   nft add chain inet nftclash force_proxy
   nft add rule inet nftclash prerouting jump force_proxy
+  nft add rule inet nftclash prerouting_nat jump force_proxy
   init_proxy_list
 
   # Bypass proxy chain
   echo -e "${BLUE}INIT BYPASS PROXY CHAIN${NOCOLOR}"
   nft add chain inet nftclash bypass_proxy
   nft add rule inet nftclash prerouting jump bypass_proxy
+  nft add rule inet nftclash prerouting_nat jump bypass_proxy
   init_bypass_list
 
   [ "$BYPASS_SOURCE_PORT_ENABLED" = 1 ] && {
