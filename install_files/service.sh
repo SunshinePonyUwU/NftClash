@@ -899,7 +899,6 @@ init_started() {
   if [ ! -d "$TMPDIR" ]; then
     mkdir -p "$TMPDIR"
   fi
-  init_config
   if [ "$INIT_CHECKS_ENABLED" = 1 ]; then
     CHECK_FAILURE=0
     CHECK_FAILURE_COUNT=0
@@ -933,6 +932,7 @@ flush_fw() {
   }
 }
 
+init_config
 case "$1" in
   init_startup)
     init_startup
@@ -940,48 +940,36 @@ case "$1" in
   init_started)
     init_started
     ;;
-  init_config)
-    init_config
-    ;;
   init_fw)
-    init_config
     init_fw
     ;;
   reinit_fw)
     flush_fw
-    init_config
     init_fw
     ;;
   flush_fw)
     flush_fw
     ;;
   check_update)
-    init_config
     check_update
     ;;
   update_clash_config)
-    init_config
     update_clash_config
     ;;
   silent_update_china_iplist)
-    init_config
     slient_update_china_iplist
     ;;
   silent_update_clash_config)
-    init_config
     silent_update_clash_config
     ;;
   silent_update)
-    init_config
     slient_update_china_iplist
     silent_update_clash_config
     ;;
   get_conf)
-    init_config
     get_conf $2
     ;;
   set_conf)
-    init_config
     set_conf $2 $3
     ;;
 esac
