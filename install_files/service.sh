@@ -114,6 +114,28 @@ init_config() {
   init_clash_api
 }
 
+get_conf() {
+  conf_name="$1"
+  eval "conf_value=\"\${$conf_name}\""
+  if [ -n "$conf_value" ]; then
+    echo -e "${YELLOW}$conf_name${NOCOLOR}=${GREEN}$conf_value${NOCOLOR}"
+  else
+    echo -e "${RED}$conf_name is not defined.${NOCOLOR}"
+  fi
+}
+
+set_conf() {
+  conf_name="$1"
+  conf_value_new="$2"
+  eval "conf_value=\"\${$conf_name}\""
+  if [ -n "$conf_value" ]; then
+    set_config $conf_name $conf_value_new && \
+    echo -e "${BLUE}SET CONFIG $conf_name=$conf_value_new DONE!${NOCOLOR}"
+  else
+    echo -e "${RED}$conf_name is not defined.${NOCOLOR}"
+  fi
+}
+
 # LINK, PATH, UA
 download_file() {
   [ -z "$3" ] && ua="nftclash-download" || ua=$3
@@ -953,6 +975,14 @@ case "$1" in
     init_config
     slient_update_china_iplist
     silent_update_clash_config
+    ;;
+  get_conf)
+    init_config
+    get_conf $2
+    ;;
+  set_conf)
+    init_config
+    set_conf $2 $3
     ;;
 esac
 exit 0
