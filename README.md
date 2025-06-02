@@ -87,6 +87,7 @@ CHINA IP LIST 更新后無需重啓立即生效
 | BYPASS_53_TCP | 0 | 0,1 | 不代理DNS (TCP) |
 | BYPASS_53_UDP | 0 | 0,1 | 不代理DNS (UDP) |
 | REJECT_QUIC | 0 | 0,1 | 丟棄QUIC協議數據包 |
+| ICMP_REDIRECT | 0 | 0,1 | 將ICMP重定向到本機 |
 | INIT_CHECKS_ENABLED | 1 | 0,1 | 啓動前檢查，避免出現clash還沒啓動完成的時候無法訪問互聯網 |
 | CLASH_CONFIG_UPDATE_ENABLED | 0 | 0,1 | 是否更新clash配置文件 |
 | CLASH_CONFIG_UPDATE_URL | "" | (URL) | 下載clash配置文件的鏈接 |
