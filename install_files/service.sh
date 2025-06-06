@@ -142,7 +142,7 @@ connection_check() {
         is_fw_rule_initialized=1
       }
 
-      curl -x "socks5://127.0.0.1:$socks_port" -v -I "$CONN_CHECKS_URL"
+      curl -x "socks5://127.0.0.1:$socks_port" -s "$CONN_CHECKS_URL"&> /dev/null
       if [ $? -eq 0 ]; then
         [ "$is_fw_rule_initialized" = 0 ] && init_fw
       else
