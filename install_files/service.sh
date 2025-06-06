@@ -70,6 +70,9 @@ init_config() {
   REJECT_QUIC=0
   ICMP_REDIRECT=0
   INIT_CHECKS_ENABLED=1
+  CONN_CHECKS_ENABLED=1
+  CONN_CHECKS_INTERVAL=60
+  CONN_CHECKS_URL=http://cp.cloudflare.com/
   CLASH_CONFIG_UPDATE_ENABLED=0
   CLASH_CONFIG_UPDATE_URL=""
   CLASH_CONFIG_UPDATE_UA=""
@@ -100,6 +103,9 @@ init_config() {
     set_config REJECT_QUIC $REJECT_QUIC
     set_config ICMP_REDIRECT $ICMP_REDIRECT
     set_config INIT_CHECKS_ENABLED $INIT_CHECKS_ENABLED
+    set_config CONN_CHECKS_ENABLED $CONN_CHECKS_ENABLED
+    set_config CONN_CHECKS_INTERVAL $CONN_CHECKS_INTERVAL
+    set_config CONN_CHECKS_URL $CONN_CHECKS_URL
     set_config CLASH_CONFIG_UPDATE_ENABLED $CLASH_CONFIG_UPDATE_ENABLED
     set_config CLASH_CONFIG_UPDATE_URL $CLASH_CONFIG_UPDATE_URL
     set_config CLASH_CONFIG_UPDATE_UA $CLASH_CONFIG_UPDATE_UA
@@ -108,10 +114,53 @@ init_config() {
 
   get_clash_config tproxy_port tproxy-port
   get_clash_config redir_port redir-port
+  get_clash_config socks_port socks-port
+  [ "$socks_port" = "null" ] && get_clash_config socks_port mixed-port
+  [ "$socks_port" = "null" ] && {
+    CONN_CHECKS_ENABLED=0
+    echo -e "${RED}Connection checks disabled! socks-port or mixed-port is not defined.${NOCOLOR}"
+  }
   fwmark=$redir_port
   get_clash_config clash_dns_enabled dns.enable
   get_clash_config clash_dns_listen dns.listen
   init_clash_api
+}
+
+connection_check() {
+  pid_file="/tmp/nftclash/conn_check.pid"
+  arg1="$1"
+  [ "$CONN_CHECKS_ENABLED" = 0 ] && exit 0
+  if [ "$arg1" = "start" ];then
+    if [ -e "$pid_file" ];then
+      exit 1
+    fi
+    echo $$ > "$pid_file"
+
+    while true; do
+      is_fw_rule_initialized=0
+      nft list table inet nftclash&> /dev/null && {
+        is_fw_rule_initialized=1
+      }
+
+      curl -x "socks5://127.0.0.1:$socks_port" -v -I "$CONN_CHECKS_URL"
+      if [ $? -eq 0 ]; then
+        [ "$is_fw_rule_initialized" = 0 ] && init_fw
+      else
+        [ "$is_fw_rule_initialized" = 1 ] && flush_fw
+      fi
+      sleep "$CONN_CHECKS_INTERVAL"
+    done
+  elif [ "$arg1" = "end" ];then
+    if [ -f "$pid_file" ];then
+      pid=$(cat "$pid_file")
+      if kill -0 "$pid" 2>/dev/null; then
+          sleep 1
+      fi
+      rm -f "$pid_file"
+    else
+      exit 1
+    fi
+  fi
 }
 
 get_conf() {
@@ -971,6 +1020,9 @@ case "$1" in
     ;;
   set_conf)
     set_conf $2 $3
+    ;;
+  conn_check)
+    connection_check $2
     ;;
 esac
 exit 0
