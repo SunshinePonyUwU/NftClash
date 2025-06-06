@@ -12,7 +12,6 @@ CLASH_HOME_DIR=$DIR/clash
 start_service() {
 	$DIR/service.sh init_startup || return 1
 	SAFE_PATHS=$(cat "$DIR/env/SAFE_PATHS")
-	$DIR/service.sh conn_check start &
 	$DIR/service.sh init_started &
 	procd_open_instance
 	procd_set_param respawn
@@ -22,11 +21,14 @@ start_service() {
 	procd_set_param command $CLASH_HOME_DIR/clash -d $CLASH_HOME_DIR
 	procd_set_param user nftclash
 	procd_close_instance
+	# Connection Checks
+	procd_open_instance
+	procd_set_param command $DIR/service.sh conn_check
+	procd_close_instance
 }
 
 stop_service() {
 	$DIR/service.sh flush_fw
-	$DIR/service.sh conn_check end &
 }
 
 reload_service() {

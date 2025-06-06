@@ -127,15 +127,7 @@ init_config() {
 }
 
 connection_check() {
-  pid_file="/tmp/nftclash/conn_check.pid"
-  arg1="$1"
-  [ "$CONN_CHECKS_ENABLED" = 0 ] && exit 0
-  if [ "$arg1" = "start" ];then
-    if [ -e "$pid_file" ];then
-      exit 1
-    fi
-    echo $$ > "$pid_file"
-
+  [ "$CONN_CHECKS_ENABLED" = 1 ] && {
     while true; do
       is_fw_rule_initialized=0
       nft list table inet nftclash&> /dev/null && {
@@ -150,17 +142,7 @@ connection_check() {
       fi
       sleep "$CONN_CHECKS_INTERVAL"
     done
-  elif [ "$arg1" = "end" ];then
-    if [ -f "$pid_file" ];then
-      pid=$(cat "$pid_file")
-      if kill -0 "$pid" 2>/dev/null; then
-          sleep 1
-      fi
-      rm -f "$pid_file"
-    else
-      exit 1
-    fi
-  fi
+  }
 }
 
 get_conf() {
@@ -1022,7 +1004,7 @@ case "$1" in
     set_conf $2 $3
     ;;
   conn_check)
-    connection_check $2
+    connection_check
     ;;
 esac
 exit 0
