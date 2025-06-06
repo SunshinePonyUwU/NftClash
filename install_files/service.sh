@@ -160,8 +160,12 @@ set_conf() {
   conf_value_new="$2"
   eval "conf_value=\"\${$conf_name}\""
   if [ -n "$conf_value" ]; then
-    set_config $conf_name $conf_value_new && \
-    echo -e "${BLUE}SET CONFIG $conf_name=$conf_value_new DONE!${NOCOLOR}"
+    if [ -n "$conf_value_new" ]; then
+      set_config $conf_name $conf_value_new && \
+      echo -e "${BLUE}SET CONFIG $conf_name=$conf_value_new DONE!${NOCOLOR}"
+    else
+      echo -e "${RED}new value is not defined.${NOCOLOR}"
+    fi
   else
     echo -e "${RED}$conf_name is not defined.${NOCOLOR}"
   fi
