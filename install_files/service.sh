@@ -177,6 +177,14 @@ set_conf() {
   fi
 }
 
+disable_colors() {
+  BLUE=''
+  YELLOW=''
+  GREEN=''
+  RED=''
+  NOCOLOR=''
+}
+
 # LINK, PATH, UA
 download_file() {
   [ -z "$3" ] && ua="nftclash-download" || ua=$3
@@ -1040,9 +1048,11 @@ case "$1" in
     set_conf $2 $3
     ;;
   conn_check)
+    disable_colors
     connection_check
     ;;
   init_check)
+    disable_colors
     init_check
     ;;
 esac
