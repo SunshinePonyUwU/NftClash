@@ -242,7 +242,7 @@ init_clash_api() {
   fi
 }
 
-slient_update_china_iplist() {
+silent_update_china_iplist() {
   if [ -e "$VERSION_PATH" ]; then
     source $VERSION_PATH
   else
@@ -1036,13 +1036,13 @@ case "$1" in
     update_clash_config
     ;;
   silent_update_china_iplist)
-    slient_update_china_iplist
+    silent_update_china_iplist
     ;;
   silent_update_clash_config)
     silent_update_clash_config
     ;;
   silent_update)
-    slient_update_china_iplist
+    silent_update_china_iplist
     silent_update_clash_config
     ;;
   get_conf)
