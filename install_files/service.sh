@@ -934,7 +934,16 @@ init_started() {
   if [ ! -d "$TMPDIR" ]; then
     mkdir -p "$TMPDIR"
   fi
-  if [ "$INIT_CHECKS_ENABLED" = 1 ]; then
+  [ "$INIT_CHECKS_ENABLED" = 0 ] && {
+    init_fw
+    echo -e "${GREEN}API_URL: ${NOCOLOR}http://${host_ipv4}:${clash_api_port}${NOCOLOR}"
+    echo -e "${BLUE}CLASH SERVICE STARTED${NOCOLOR}"
+  }
+  exit 0
+}
+
+init_check() {
+  [ "$INIT_CHECKS_ENABLED" = 1 ] && {
     CHECK_FAILURE=0
     CHECK_FAILURE_COUNT=0
     while [ "$CHECK_FAILURE_COUNT" -le 30 ]; do
@@ -952,12 +961,7 @@ init_started() {
       echo -e "${RED}CLASH TIMEDOUT!!!${NOCOLOR}"
       exit 1
     fi
-  else
-    init_fw
-  fi
-  echo -e "${GREEN}API_URL: ${NOCOLOR}http://${host_ipv4}:${clash_api_port}${NOCOLOR}"
-  echo -e "${BLUE}CLASH SERVICE STARTED${NOCOLOR}"
-  exit 0
+  }
 }
 
 flush_fw() {
@@ -1009,6 +1013,9 @@ case "$1" in
     ;;
   conn_check)
     connection_check
+    ;;
+  init_check)
+    init_check
     ;;
 esac
 exit 0

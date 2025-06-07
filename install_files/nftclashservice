@@ -11,8 +11,8 @@ CLASH_HOME_DIR=$DIR/clash
 
 start_service() {
 	$DIR/service.sh init_startup || return 1
+	$DIR/service.sh init_started
 	SAFE_PATHS=$(cat "$DIR/env/SAFE_PATHS")
-	$DIR/service.sh init_started &
 	procd_open_instance
 	procd_set_param respawn
 	procd_set_param stderr 0
@@ -24,6 +24,10 @@ start_service() {
 	# Connection Checks
 	procd_open_instance
 	procd_set_param command $DIR/service.sh conn_check
+	procd_close_instance
+	# Init Checcks
+	procd_open_instance
+	procd_set_param command $DIR/service.sh init_check
 	procd_close_instance
 }
 
