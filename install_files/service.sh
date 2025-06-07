@@ -6,7 +6,8 @@ GREEN='\033[1;32m'
 RED='\033[1;31m'
 NOCOLOR='\033[0m' # No Color
 
-LOGTAG=NFTC
+LOGTAG=nftclash
+LOGTAG_ECHO=NFTC
 
 DIR=/etc/nftclash
 TMPDIR=/tmp/nftclash
@@ -23,16 +24,52 @@ reserved_ipv4="0.0.0.0/8 10.0.0.0/8 100.64.0.0/10 127.0.0.0/8 169.254.0.0/16 172
 reserved_ipv6="::/128 ::1/128 ::ffff:0:0/96 ::ffff:0:0:0/96 64:ff9b::/96 64:ff9b:1::/48 100::/64 2001::/32 2001:20::/28 2001:db8::/32 2002::/16 3fff::/20 5f00::/16 fc00::/7 fe80::/10 ff00::/8"
 host_ipv4=$(ubus call network.interface.lan status 2>&1 | grep \"address\" | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}';)
 
+log() {
+  level=$1
+  msg=$2
+  priority="daemon.notice"
+
+  case $level in
+      debug)
+      priority="daemon.debug"
+      level_text="DEBUG"
+      ;;
+      info) 
+      priority="daemon.info"
+      level_text="INFO"
+      ;;
+      warn) 
+      priority="daemon.warn"
+      level_text="WARN"
+      ;;
+      err)  
+      priority="daemon.err"
+      level_text="ERROR"
+      ;;
+  esac
+
+  logger -t "$LOGTAG" -p "$priority" "[$level_text] $msg"
+}
+
 log_info() {
-    echo -e "[${GREEN}$LOGTAG${NOCOLOR}][${BLUE}INFO${NOCOLOR}] ${BLUE}$1${NOCOLOR}"
+    msg=$1
+
+    log info $msg
+    echo -e "[${GREEN}$LOGTAG_ECHO${NOCOLOR}][${BLUE}INFO${NOCOLOR}] ${BLUE}$msg${NOCOLOR}"
 }
 
 log_warn() {
-    echo -e "[${GREEN}$LOGTAG${NOCOLOR}][[${YELLOW}WARN${NOCOLOR}] ${YELLOW}$1${NOCOLOR}" >&2
+    msg=$1
+
+    log warn $msg
+    echo -e "[${GREEN}$LOGTAG_ECHO${NOCOLOR}][[${YELLOW}WARN${NOCOLOR}] ${YELLOW}$msg${NOCOLOR}" >&2
 }
 
 log_error() {
-    echo -e "[${GREEN}$LOGTAG${NOCOLOR}][[${RED}ERROR${NOCOLOR}] ${RED}$1${NOCOLOR}" >&2
+    msg=$1
+
+    log err $msg
+    echo -e "[${GREEN}$LOGTAG_ECHO${NOCOLOR}][[${RED}ERROR${NOCOLOR}] ${RED}$msg${NOCOLOR}" >&2
 }
 
 check_command() {
