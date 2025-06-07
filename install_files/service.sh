@@ -1131,7 +1131,7 @@ case "$1" in
     init_check
     ;;
   clash_api_fetch)
-    clash_api_fetch $2 $3
+    clash_api_fetch $2 $3 $4
     ;;
   *)
     return 1
