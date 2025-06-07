@@ -366,16 +366,27 @@ update_clash_config() {
 }
 
 check_update() {
-  if [ -e "$VERSION_PATH" ]; then
-    source $VERSION_PATH
-    [ -z "$VERSION_SERVICE" ] && {
-      log_error "version info is missing!!!"
-      return 1
-    }
+  local arg1=$1
+  if [ "$arg1" = "force" ]; then
+    VERSION_SERVICE=0
+    VERSION_CHINA_IPLIST=0
+  elif [ "$arg1" = "force-service" ]; then
+    VERSION_SERVICE=0
+  elif [ "$arg1" = "force-china-iplist" ]; then
+    VERSION_CHINA_IPLIST=0
   else
-    log_error "version file is missing!!!"
-    return 1
+    if [ -e "$VERSION_PATH" ]; then
+      source $VERSION_PATH
+      [ -z "$VERSION_SERVICE" ] && {
+        log_error "version info is missing!!!"
+        return 1
+      }
+    else
+      log_error "version file is missing!!!"
+      return 1
+    fi
   fi
+  
   update_data=$(fetch_files_repo "/update.json")
   [ -z "$update_data" ] && {
     log_error "UPDATE CHECK FAILED!!!"
@@ -1071,6 +1082,7 @@ flush_fw() {
   }
 }
 
+log info "$0 $@"
 init_config
 case "$1" in
   init_startup)
@@ -1096,7 +1108,7 @@ case "$1" in
     flush_tproxy
     ;;
   check_update)
-    check_update
+    check_update $2
     ;;
   update_clash_config)
     update_clash_config
