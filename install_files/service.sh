@@ -198,7 +198,7 @@ connection_check() {
   [ "$CONN_CHECKS_ENABLED" = 1 ] && {
     CHECK_FAILURE=0
     CHECK_FAILURE_COUNT=0
-    CHECK_SUCCESS=0
+    CHECK_SUCCESS=1
     CHECK_SUCCESS_COUNT=0
     while true; do
       is_tproxy_chain_initialized=$(nft -j list chain inet nftclash transparent_proxy 2> /dev/null | jq -e '.nftables | map(select(.rule)) | length != 0')
