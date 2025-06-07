@@ -136,9 +136,15 @@ connection_check() {
 
       curl -x "socks5://127.0.0.1:$socks_port" -s "$CONN_CHECKS_URL"&> /dev/null
       if [ $? -eq 0 ]; then
-        [ "$is_fw_rule_initialized" = 0 ] && init_tproxy
+        [ "$is_fw_rule_initialized" = 0 ] && {
+          init_tproxy
+          echo -e "${BLUE}socks5 test success, init tproxy.${NOCOLOR}"
+        }
       else
-        [ "$is_fw_rule_initialized" = 1 ] && flush_tproxy
+        [ "$is_fw_rule_initialized" = 1 ] && {
+          flush_tproxy
+          echo -e "${RED}socks5 test failure, flush tproxy.${NOCOLOR}"
+        }
       fi
       sleep "$CONN_CHECKS_INTERVAL"
     done
