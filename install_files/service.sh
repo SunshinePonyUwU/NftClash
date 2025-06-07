@@ -31,7 +31,7 @@ log_warn() {
     echo -e "[$LOGTAG][[${YELLOW}WARN${NOCOLOR}] $1${NOCOLOR}" >&2
 }
 
-log_error()) {
+log_error() {
     echo -e "[$LOGTAG][[${RED}ERROR${NOCOLOR}] $1${NOCOLOR}" >&2
 }
 
