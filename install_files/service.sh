@@ -153,7 +153,7 @@ connection_check() {
         [ "$is_tproxy_chain_initialized" = "true" ] && {
           CHECK_FAILURE=1
           CHECK_FAILURE_COUNT=$(( CHECK_FAILURE_COUNT + 1 ))
-          [ "$CHECK_FAILURE_COUNT" -le "$CONN_CHECKS_MAX_FAILURES" ] && {
+          [ "$CHECK_FAILURE_COUNT" -ge "$CONN_CHECKS_MAX_FAILURES" ] && {
             flush_tproxy
             log_warn "socks5 test failure, flush tproxy. (x$CHECK_FAILURE_COUNT)"
           }
