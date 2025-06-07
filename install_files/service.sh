@@ -246,12 +246,12 @@ silent_update_china_iplist() {
   if [ -e "$VERSION_PATH" ]; then
     source $VERSION_PATH
   else
-    echo "version file is missing!!!"
+    log_error "version file is missing!!!"
     exit 1
   fi
   update_data=$(fetch_files_repo "/update.json")
   [ -z "$update_data" ] && {
-    echo "UPDATE CHECK FAILED!!!"
+    log_error "UPDATE CHECK FAILED!!!"
     exit 1
   }
   latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
@@ -273,6 +273,7 @@ silent_update_china_iplist() {
           nft flush set inet nftclash cn_ip6
           nft add element inet nftclash cn_ip6 {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")}
         }
+        log_info "UPDATE CHINA IP DONE!!! VER: $latest_china_iplist_version"
       fi
     fi
   fi
@@ -283,7 +284,9 @@ silent_update_clash_config() {
     [ -z "$CLASH_CONFIG_UPDATE_UA" ] && download_ua="nftclash-download/config-update-silent" || download_ua=$CLASH_CONFIG_UPDATE_UA
     download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml" "$download_ua"
     chmod 777 "$CLASH_HOME_DIR/config.yaml"
-    clash_api_put "http://127.0.0.1:${clash_api_port}/configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" &> /dev/null
+    clash_api_put "http://127.0.0.1:${clash_api_port}/configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" &> /dev/null && {
+      log_info "UPDATE CLASH CONFIG DONE!!!"
+    }
   fi
 }
 
@@ -294,8 +297,9 @@ update_clash_config() {
     download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml" "$download_ua"
     chmod 777 "$CLASH_HOME_DIR/config.yaml"
     log_info "RELOAD CONFIG"
-    clash_api_put "http://127.0.0.1:${clash_api_port}/configs?force=true" "{\"path\":\"\",\"payload\":\"\"}"
-    log_info "UPDATE CLASH CONFIG DONE!!!"
+    clash_api_put "http://127.0.0.1:${clash_api_port}/configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" && {
+      log_info "UPDATE CLASH CONFIG DONE!!!"
+    }
   else
     log_error "please configure CLASH_CONFIG_UPDATE_ENABLED and CLASH_CONFIG_UPDATE_URL"
   fi
