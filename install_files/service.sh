@@ -133,19 +133,16 @@ init_config() {
 connection_check() {
   [ "$CONN_CHECKS_ENABLED" = 1 ] && {
     while true; do
-      is_fw_rule_initialized=0
-      nft list table inet nftclash&> /dev/null && {
-        is_fw_rule_initialized=1
-      }
+      is_tproxy_chain_initialized=$(nft -j list chain inet nftclash transparent_proxy 2> /dev/null | jq -e '.nftables | map(select(.rule)) | length != 0')
 
       curl -x "socks5://127.0.0.1:$socks_port" -s "$CONN_CHECKS_URL"&> /dev/null
       if [ $? -eq 0 ]; then
-        [ "$is_fw_rule_initialized" = 0 ] && {
+        [ "$is_tproxy_chain_initialized" = "false" ] && {
           init_tproxy
           log_info "socks5 test success, init tproxy."
         }
       else
-        [ "$is_fw_rule_initialized" = 1 ] && {
+        [ "$is_tproxy_chain_initialized" = "true" ] && {
           flush_tproxy
           log_warn "socks5 test failure, flush tproxy."
         }
