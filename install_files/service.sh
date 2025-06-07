@@ -332,6 +332,10 @@ silent_update_china_iplist() {
   fi
 }
 
+reload_clash_config() {
+  clash_api_fetch PUT "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}"
+}
+
 silent_update_clash_config() {
   if [ "$CLASH_CONFIG_UPDATE_ENABLED" = 1 ] && [ "$CLASH_CONFIG_UPDATE_URL" != "" ]; then
     [ -z "$CLASH_CONFIG_UPDATE_UA" ] && download_ua="nftclash-download/config-update-silent" || download_ua=$CLASH_CONFIG_UPDATE_UA
@@ -1104,6 +1108,9 @@ case "$1" in
     ;;
   check_update)
     check_update $2
+    ;;
+  reload_clash_config)
+    reload_clash_config
     ;;
   update_clash_config)
     update_clash_config

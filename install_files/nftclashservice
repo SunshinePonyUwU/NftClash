@@ -41,5 +41,5 @@ stop_service() {
 
 reload_service() {
 	$DIR/service.sh reinit_fw
-	$DIR/service.sh clash_api_fetch PUT "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}"
+	$DIR/service.sh reload_clash_config
 }
