@@ -25,24 +25,25 @@ reserved_ipv6="::/128 ::1/128 ::ffff:0:0/96 ::ffff:0:0:0/96 64:ff9b::/96 64:ff9b
 host_ipv4=$(ubus call network.interface.lan status 2>&1 | grep \"address\" | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}';)
 
 log() {
-  level=$1
-  msg=$2
-  priority="daemon.notice"
+  local level=$1
+  local msg=$2
+  local priority="daemon.notice"
+  local level_text="NOTICE"
 
   case $level in
-      debug)
+    debug)
       priority="daemon.debug"
       level_text="DEBUG"
       ;;
-      info) 
+    info) 
       priority="daemon.info"
       level_text="INFO"
       ;;
-      warn) 
+    warn) 
       priority="daemon.warn"
       level_text="WARN"
       ;;
-      err)  
+    err)  
       priority="daemon.err"
       level_text="ERROR"
       ;;
@@ -52,23 +53,23 @@ log() {
 }
 
 log_info() {
-    msg=$1
+    local msg=$1
 
-    log info $msg
+    log info "$msg"
     echo -e "[${GREEN}$LOGTAG_ECHO${NOCOLOR}][${BLUE}INFO${NOCOLOR}] ${BLUE}$msg${NOCOLOR}"
 }
 
 log_warn() {
-    msg=$1
+    local msg=$1
 
-    log warn $msg
+    log warn "$msg"
     echo -e "[${GREEN}$LOGTAG_ECHO${NOCOLOR}][[${YELLOW}WARN${NOCOLOR}] ${YELLOW}$msg${NOCOLOR}" >&2
 }
 
 log_error() {
-    msg=$1
+    local msg=$1
 
-    log err $msg
+    log err "$msg"
     echo -e "[${GREEN}$LOGTAG_ECHO${NOCOLOR}][[${RED}ERROR${NOCOLOR}] ${RED}$msg${NOCOLOR}" >&2
 }
 
@@ -232,14 +233,6 @@ set_conf() {
   else
     log_error "$conf_name is not defined."
   fi
-}
-
-disable_colors() {
-  BLUE=''
-  YELLOW=''
-  GREEN=''
-  RED=''
-  NOCOLOR=''
 }
 
 # LINK, PATH, UA
