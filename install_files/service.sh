@@ -1111,11 +1111,9 @@ case "$1" in
     set_conf $2 $3
     ;;
   conn_check)
-    [ "$2" = "-nocolor" ] && disable_colors
     connection_check
     ;;
   init_check)
-    [ "$2" = "-nocolor" ] && disable_colors
     init_check
     ;;
 esac
