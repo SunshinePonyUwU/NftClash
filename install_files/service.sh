@@ -1109,7 +1109,7 @@ case "$1" in
   flush_tproxy)
     flush_tproxy
     ;;
-  force_flush_tproxy
+  force_flush_tproxy)
     flush_tproxy
     clash_api_fetch DELETE connections
     ;;
