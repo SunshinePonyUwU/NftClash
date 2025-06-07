@@ -25,11 +25,11 @@ start_service() {
 	procd_close_instance
 	# Connection Checks
 	procd_open_instance
-	procd_set_param command $DIR/service.sh conn_check | logger -t $LOGTAG
+	procd_set_param command /bin/sh -c "$DIR/service.sh conn_check | logger -t $LOGTAG"
 	procd_close_instance
 	# Init Checcks
 	procd_open_instance
-	procd_set_param command $DIR/service.sh init_check | logger -t $LOGTAG
+	procd_set_param command /bin/sh -c "$DIR/service.sh init_check | logger -t $LOGTAG"
 	procd_close_instance
 }
 
