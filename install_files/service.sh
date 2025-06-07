@@ -226,7 +226,7 @@ get_conf() {
   [ -z "$conf_name" ] && log_error "missing argument." && return 1
   eval "conf_value=\"\${$conf_name}\""
   if [ -n "$conf_value" ]; then
-    log_warn "$conf_name${NOCOLOR}=${GREEN}$conf_value"
+    log_info "${YELLOW}$conf_name${NOCOLOR}=${GREEN}$conf_value${NOCOLOR}"
   else
     log_error "$conf_name is not defined."
   fi
