@@ -22,7 +22,9 @@ REPO_URL="https://raw.githubusercontent.com/SunshinePonyUwU/NftClash/main"
 # https://en.wikipedia.org/wiki/Reserved_IP_addresses
 RESERVED_IPV4="0.0.0.0/8 10.0.0.0/8 100.64.0.0/10 127.0.0.0/8 169.254.0.0/16 172.16.0.0/12 192.0.0.0/24 192.0.2.0/24 192.88.99.0/24 192.168.0.0/16 198.18.0.0/15 198.51.100.0/24 203.0.113.0/24 224.0.0.0/4 240.0.0.0/4 255.255.255.255/32"
 RESERVED_IPV6="::/128 ::1/128 ::ffff:0:0/96 ::ffff:0:0:0/96 64:ff9b::/96 64:ff9b:1::/48 100::/64 2001::/32 2001:20::/28 2001:db8::/32 2002::/16 3fff::/20 5f00::/16 fc00::/7 fe80::/10 ff00::/8"
-HOST_IPV4=$(ubus call network.interface.lan status 2>&1 | grep \"address\" | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}';)
+HOST_IPV4=$(ubus call network.interface.lan status 2>&1 | jq -r '.["ipv4-address"][0].address')
+HOST_IPV6=$(ubus call network.interface.lan status 2>&1 | jq -r '.["ipv6-address"][0].address')
+[ "$HOST_IPV6" = "null" ] && HOST_IPV6=$(ubus call network.interface.lan status 2>&1 | jq -r '.["ipv6-prefix-assignment"][0].["local-address"].address')
 
 log() {
   local level=$1
@@ -171,7 +173,25 @@ init_config() {
   fwmark=$redir_port
   get_clash_config clash_dns_enabled dns.enable
   get_clash_config clash_dns_listen dns.listen
-  init_clash_api
+}
+
+init_clash_api() {
+  get_clash_config CLASH_API_LISTEN external-controller
+  get_clash_config CLASH_API_SECRET secret
+  API_LISTEN_IP=$(echo $CLASH_API_LISTEN | cut -d ":" -f 1)
+  API_LISTEN_PORT=$(echo $CLASH_API_LISTEN | cut -d ":" -f 2)
+  if command -v curl >/dev/null 2>&1; then
+    if [ -n "$API_LISTEN_PORT" ] && { [ -z "$API_LISTEN_IP" ] || [ "$API_LISTEN_IP" = "0.0.0.0" ]; }; then
+      CLASH_API_PORT=$API_LISTEN_PORT
+      CLASH_API_AVAILABLE=1
+    else
+      log_warn "You need to set the listening IP of clash api to 0.0.0.0!!!"
+      CLASH_API_AVAILABLE=0
+    fi
+  else
+    log_warn "You need to install curl!!!"
+    CLASH_API_AVAILABLE=0
+  fi
 }
 
 connection_check() {
@@ -263,43 +283,15 @@ fetch_repo(){
   curl -s "$REPO_URL$1"
 }
 
-clash_api_get(){
+clash_api_fetch() {
+  local fetch_method=$1
+  local fetch_path=$2
+  local fetch_data=$3
+  [ -z "$fetch_method" ] && fetch_method="GET"
   if [ "$CLASH_API_AVAILABLE" = 1 ]; then
-    curl -s -H "Authorization: Bearer ${CLASH_API_SECRET}" -H "Content-Type:application/json" "http://127.0.0.1:${CLASH_API_PORT}/${1}"
+    curl -s -X "$fetch_method" -H "Authorization: Bearer ${CLASH_API_SECRET}" -H "Content-Type:application/json" "http://127.0.0.1:${CLASH_API_PORT}/${fetch_path}" -d "$fetch_data"
   else
     log_warn "Clash Api is not available!!!"
-  fi
-}
-
-clash_api_put(){
-  if [ "$CLASH_API_AVAILABLE" = 1 ]; then
-    curl -sS -X PUT -H "Authorization: Bearer ${CLASH_API_SECRET}" -H "Content-Type:application/json" "http://127.0.0.1:${CLASH_API_PORT}/${1}" -d "$2"
-  else
-    log_warn "Clash Api is not available!!!"
-  fi
-}
-
-clash_api_version() {
-  clash_version=$(clash_api_get version | jq -r .version)
-}
-
-init_clash_api() {
-  get_clash_config CLASH_API_LISTEN external-controller
-  get_clash_config CLASH_API_PORT secret
-  API_LISTEN_IP=$(echo $CLASH_API_LISTEN | cut -d ":" -f 1)
-  API_LISTEN_PORT=$(echo $CLASH_API_LISTEN | cut -d ":" -f 2)
-  if command -v curl >/dev/null 2>&1; then
-    if [ -n "$API_LISTEN_PORT" ] && { [ -z "$API_LISTEN_IP" ] || [ "$API_LISTEN_IP" = "0.0.0.0" ]; }; then
-      # CLASH_API_SECRET=clash_api_secret
-      CLASH_API_PORT=$API_LISTEN_PORT
-      CLASH_API_AVAILABLE=1
-    else
-      log_warn "You need to set the listening IP of clash api to 0.0.0.0!!!"
-      CLASH_API_AVAILABLE=0
-    fi
-  else
-    log_warn "You need to install curl!!!"
-    CLASH_API_AVAILABLE=0
   fi
 }
 
@@ -345,7 +337,7 @@ silent_update_clash_config() {
     [ -z "$CLASH_CONFIG_UPDATE_UA" ] && download_ua="nftclash-download/config-update-silent" || download_ua=$CLASH_CONFIG_UPDATE_UA
     download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml" "$download_ua"
     chmod 777 "$CLASH_HOME_DIR/config.yaml"
-    clash_api_put "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" &> /dev/null && {
+    clash_api_fetch PUT "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" &> /dev/null && {
       log_info "UPDATE CLASH CONFIG DONE!!!"
     }
   fi
@@ -358,7 +350,7 @@ update_clash_config() {
     download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml" "$download_ua"
     chmod 777 "$CLASH_HOME_DIR/config.yaml"
     log_info "RELOAD CONFIG"
-    clash_api_put "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" && {
+    clash_api_fetch PUT "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" && {
       log_info "UPDATE CLASH CONFIG DONE!!!"
     }
   else
@@ -1037,9 +1029,10 @@ init_started() {
   if [ ! -d "$TMPDIR" ]; then
     mkdir -p "$TMPDIR"
   fi
+  log_info "${GREEN}API_URL: ${NOCOLOR}http://${HOST_IPV4}:${CLASH_API_PORT}"
+  log_info "${GREEN}API_URL: ${NOCOLOR}http://[${HOST_IPV6}]:${CLASH_API_PORT}"
   [ "$INIT_CHECKS_ENABLED" = 0 ] && {
     init_fw
-    log_info "${GREEN}API_URL: ${NOCOLOR}http://${HOST_IPV4}:${CLASH_API_PORT}"
     log_info "CLASH SERVICE STARTED"
   }
   return 0
@@ -1050,11 +1043,10 @@ init_check() {
     CHECK_FAILURE=0
     CHECK_FAILURE_COUNT=0
     while [ "$CHECK_FAILURE_COUNT" -le 30 ]; do
-        clash_api_get &> /dev/null
+        clash_api_fetch &> /dev/null
         if [ $? -eq 0 ]; then
           CHECK_FAILURE=0
           init_fw
-          log_info "${GREEN}API_URL: ${NOCOLOR}http://${HOST_IPV4}:${CLASH_API_PORT}"
           log_info "CLASH SERVICE STARTED"
           break
         fi
@@ -1086,6 +1078,7 @@ flush_fw() {
 
 log info "$0 $*"
 init_config
+init_clash_api
 case "$1" in
   init_startup)
     init_startup
@@ -1136,6 +1129,9 @@ case "$1" in
     ;;
   init_check)
     init_check
+    ;;
+  clash_api_fetch)
+    clash_api_fetch $2 $3
     ;;
   *)
     return 1
