@@ -232,7 +232,7 @@ connection_check() {
         }
       fi
 
-      if [ "$CHECK_FAILURE" = 1 ]; then
+      if [ "$is_tproxy_chain_initialized" = "true" ]; then
           sleep "$CONN_CHECKS_RETRY_INTERVAL"
       else
           sleep "$CONN_CHECKS_INTERVAL"
