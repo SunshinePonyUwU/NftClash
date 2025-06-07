@@ -1082,7 +1082,7 @@ flush_fw() {
   }
 }
 
-log info "$0 $@"
+log info "$0 $*"
 init_config
 case "$1" in
   init_startup)
