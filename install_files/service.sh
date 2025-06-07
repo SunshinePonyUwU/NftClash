@@ -223,6 +223,7 @@ connection_check() {
 
 get_conf() {
   conf_name="$1"
+  [ -z "$conf_name" ] && log_error "missing argument." && return 1
   eval "conf_value=\"\${$conf_name}\""
   if [ -n "$conf_value" ]; then
     log_warn "$conf_name${NOCOLOR}=${GREEN}$conf_value"
@@ -234,6 +235,7 @@ get_conf() {
 set_conf() {
   conf_name="$1"
   conf_value_new="$2"
+  [ -z "$conf_name" ] && log_error "missing argument." && return 1
   eval "conf_value=\"\${$conf_name}\""
   if [ -n "$conf_value" ]; then
     if [ -n "$conf_value_new" ]; then
@@ -305,12 +307,12 @@ silent_update_china_iplist() {
     source $VERSION_PATH
   else
     log_error "version file is missing!!!"
-    exit 1
+    return 1
   fi
   update_data=$(fetch_files_repo "/update.json")
   [ -z "$update_data" ] && {
     log_error "UPDATE CHECK FAILED!!!"
-    exit 1
+    return 1
   }
   latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
   if [ "$BYPASS_CN_IP_ENABLED" = 1 ]; then
@@ -368,16 +370,16 @@ check_update() {
     source $VERSION_PATH
     [ -z "$VERSION_SERVICE" ] && {
       log_error "version info is missing!!!"
-      exit 1
+      return 1
     }
   else
     log_error "version file is missing!!!"
-    exit 1
+    return 1
   fi
   update_data=$(fetch_files_repo "/update.json")
   [ -z "$update_data" ] && {
     log_error "UPDATE CHECK FAILED!!!"
-    exit 1
+    return 1
   }
   latest_service_version=$(echo "$update_data" | jq .service_version)
   latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
@@ -964,19 +966,19 @@ init_tproxy() {
 init_startup() {
   ! modprobe nft_tproxy && {
     log_error "missing nft_tproxy!!!"
-    exit 1
+    return 1
   }
   if ! command -v yq >/dev/null 2>&1; then
     log_error "You need to install yq!!!"
-    exit 1
+    return 1
   fi
   if ! command -v jq >/dev/null 2>&1; then
     log_error "You need to install jq!!!"
-    exit 1
+    return 1
   fi
   if ! command -v curl >/dev/null 2>&1; then
     log_error "You need to install curl!!!"
-    exit 1
+    return 1
   fi
   if [ -e "$CLASH_HOME_DIR/clash" ]; then
     if [ -e "$CLASH_HOME_DIR/config.yaml" ]; then
@@ -984,7 +986,7 @@ init_startup() {
       log_info "INIT STARTUP DONE!"
     else
       log_warn "Please manually move the clash config file to $CLASH_HOME_DIR/config.yaml"
-      exit 1
+      return 1
     fi
   else
     echo "clash file does not exist!!!"
@@ -992,10 +994,10 @@ init_startup() {
       echo "Creating directory"
       mkdir -p "$CLASH_HOME_DIR"
       log_warn "Please manually restart service!"
-      exit 1
+      return 1
     fi
     log_warn "Please manually move the clash executable file to $CLASH_HOME_DIR/clash"
-    exit 1
+    return 1
   fi
   if [ -z "$(id nftclash 2>/dev/null | grep 'root')" ];then
     if check_command userdel useradd groupmod; then
@@ -1027,7 +1029,7 @@ init_started() {
     log_info "${GREEN}API_URL: ${NOCOLOR}http://${host_ipv4}:${clash_api_port}"
     log_info "CLASH SERVICE STARTED"
   }
-  exit 0
+  return 0
 }
 
 init_check() {
@@ -1049,7 +1051,7 @@ init_check() {
     done
     if [ "$CHECK_FAILURE" = 1 ];then
       log_error "CLASH TIMEDOUT!!!"
-      exit 1
+      return 1
     fi
   }
 }
@@ -1121,5 +1123,7 @@ case "$1" in
   init_check)
     init_check
     ;;
+  *)
+    return 1
+    ;;
 esac
-exit 0
