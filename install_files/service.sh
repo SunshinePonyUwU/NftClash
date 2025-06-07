@@ -978,6 +978,8 @@ init_check() {
         if [ $? -eq 0 ]; then
           CHECK_FAILURE=0
           init_fw
+          log_info "${GREEN}API_URL: ${NOCOLOR}http://${host_ipv4}:${clash_api_port}"
+          log_info "CLASH SERVICE STARTED"
           break
         fi
         CHECK_FAILURE_COUNT=$(( CHECK_FAILURE_COUNT + 1 ))
