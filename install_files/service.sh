@@ -26,7 +26,7 @@ host_ipv4=$(ubus call network.interface.lan status 2>&1 | grep \"address\" | gre
 
 log() {
   local level=$1
-  local msg=$2
+  local msg=$(echo -e "$2" | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g')
   local priority="daemon.notice"
   local level_text="NOTICE"
 
