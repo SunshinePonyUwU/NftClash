@@ -136,9 +136,9 @@ connection_check() {
 
       curl -x "socks5://127.0.0.1:$socks_port" -s "$CONN_CHECKS_URL"&> /dev/null
       if [ $? -eq 0 ]; then
-        [ "$is_fw_rule_initialized" = 0 ] && init_fw
+        [ "$is_fw_rule_initialized" = 0 ] && init_tproxy
       else
-        [ "$is_fw_rule_initialized" = 1 ] && flush_fw
+        [ "$is_fw_rule_initialized" = 1 ] && flush_tproxy
       fi
       sleep "$CONN_CHECKS_INTERVAL"
     done
@@ -785,8 +785,7 @@ init_fw() {
   # Transparent proxy chain
   echo -e "${BLUE}INIT TPROXY CHAIN${NOCOLOR}"
   nft add chain inet nftclash transparent_proxy
-  [ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash transparent_proxy udp dport { 443, 8443 } reject
-  nft add rule inet nftclash transparent_proxy meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
+  init_tproxy
 
   init_source_ip_list
   init_mac_list
@@ -871,6 +870,15 @@ init_fw() {
   [ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash output udp dport { 443, 8443 } reject
   nft add rule inet nftclash output meta l4proto tcp mark set $fwmark redirect to $redir_port
   echo -e "${BLUE}INIT FIREWALL_RULES DONE!${NOCOLOR}"
+}
+
+init_tproxy() {
+  if nft -j list chain inet nftclash transparent_proxy 2> /dev/null | \
+     jq -e '.nftables | map(select(.rule)) | length == 0' >/dev/null;
+  then
+    [ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash transparent_proxy udp dport { 443, 8443 } reject
+    nft add rule inet nftclash transparent_proxy meta l4proto { tcp, udp } mark set $fwmark tproxy to :$tproxy_port
+  fi
 }
 
 init_startup() {
@@ -964,6 +972,14 @@ init_check() {
   }
 }
 
+flush_tproxy() {
+  if nft -j list chain inet nftclash transparent_proxy 2> /dev/null | \
+     jq -e '.nftables | map(select(.rule)) | length != 0' >/dev/null;
+  then
+    nft flush chain inet nftclash transparent_proxy
+  fi
+}
+
 flush_fw() {
   nft list table inet nftclash&> /dev/null && {
     nft flush table inet nftclash
@@ -988,6 +1004,12 @@ case "$1" in
     ;;
   flush_fw)
     flush_fw
+    ;;
+  init_tproxy)
+    init_tproxy
+    ;;
+  flush_tproxy)
+    flush_tproxy
     ;;
   check_update)
     check_update
