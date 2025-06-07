@@ -75,7 +75,9 @@ init_config() {
   ICMP_REDIRECT=0
   INIT_CHECKS_ENABLED=1
   CONN_CHECKS_ENABLED=1
-  CONN_CHECKS_INTERVAL=60
+  CONN_CHECKS_INTERVAL=300
+  CONN_CHECKS_RETRY_INTERVAL=8
+  CONN_CHECKS_MAX_FAILURES=5
   CONN_CHECKS_URL=http://cp.cloudflare.com/
   CLASH_CONFIG_UPDATE_ENABLED=0
   CLASH_CONFIG_UPDATE_URL=""
@@ -109,6 +111,8 @@ init_config() {
     set_config INIT_CHECKS_ENABLED $INIT_CHECKS_ENABLED
     set_config CONN_CHECKS_ENABLED $CONN_CHECKS_ENABLED
     set_config CONN_CHECKS_INTERVAL $CONN_CHECKS_INTERVAL
+    set_config CONN_CHECKS_RETRY_INTERVAL $CONN_CHECKS_INTERVAL
+    set_config CONN_CHECKS_MAX_FAILURES $CONN_CHECKS_INTERVAL
     set_config CONN_CHECKS_URL $CONN_CHECKS_URL
     set_config CLASH_CONFIG_UPDATE_ENABLED $CLASH_CONFIG_UPDATE_ENABLED
     set_config CLASH_CONFIG_UPDATE_URL $CLASH_CONFIG_UPDATE_URL
@@ -132,22 +136,35 @@ init_config() {
 
 connection_check() {
   [ "$CONN_CHECKS_ENABLED" = 1 ] && {
+    CHECK_FAILURE=0
+    CHECK_FAILURE_COUNT=0
     while true; do
       is_tproxy_chain_initialized=$(nft -j list chain inet nftclash transparent_proxy 2> /dev/null | jq -e '.nftables | map(select(.rule)) | length != 0')
 
       curl -x "socks5://127.0.0.1:$socks_port" -s "$CONN_CHECKS_URL"&> /dev/null
       if [ $? -eq 0 ]; then
         [ "$is_tproxy_chain_initialized" = "false" ] && {
+          CHECK_FAILURE=0
+          CHECK_FAILURE_COUNT=0
           init_tproxy
           log_info "socks5 test success, init tproxy."
         }
       else
         [ "$is_tproxy_chain_initialized" = "true" ] && {
-          flush_tproxy
-          log_warn "socks5 test failure, flush tproxy."
+          CHECK_FAILURE=1
+          CHECK_FAILURE_COUNT=$(( CHECK_FAILURE_COUNT + 1 ))
+          [ "$CHECK_FAILURE_COUNT" -le "$CONN_CHECKS_MAX_FAILURES" ] && {
+            flush_tproxy
+            log_warn "socks5 test failure, flush tproxy. (x$CHECK_FAILURE_COUNT)"
+          }
         }
       fi
-      sleep "$CONN_CHECKS_INTERVAL"
+
+      if [ "$CHECK_FAILURE" = 1 ]; then
+          sleep "$CONN_CHECKS_RETRY_INTERVAL"
+      else
+          sleep "$CONN_CHECKS_INTERVAL"
+      fi
     done
   }
 }
