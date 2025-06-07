@@ -232,8 +232,8 @@ connection_check() {
         }
       fi
 
-      sleep "$CONN_CHECKS_RETRY_INTERVAL"
-      sleep "$CONN_CHECKS_INTERVAL"
+      [ "$CHECK_FAILURE" = 1 ] && sleep "$CONN_CHECKS_RETRY_INTERVAL"
+      [ "$CHECK_SUCCESS" = 1 ] && sleep "$CONN_CHECKS_INTERVAL"
     done
   }
 }
