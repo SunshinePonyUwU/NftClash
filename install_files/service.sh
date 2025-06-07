@@ -24,15 +24,15 @@ reserved_ipv6="::/128 ::1/128 ::ffff:0:0/96 ::ffff:0:0:0/96 64:ff9b::/96 64:ff9b
 host_ipv4=$(ubus call network.interface.lan status 2>&1 | grep \"address\" | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}';)
 
 log_info() {
-    echo -e "[$LOGTAG][${BLUE}INFO${NOCOLOR}] ${BLUE}$1${NOCOLOR}"
+    echo -e "[${GREEN}$LOGTAG${NOCOLOR}][${BLUE}INFO${NOCOLOR}] ${BLUE}$1${NOCOLOR}"
 }
 
 log_warn() {
-    echo -e "[$LOGTAG][[${YELLOW}WARN${NOCOLOR}] ${YELLOW}$1${NOCOLOR}" >&2
+    echo -e "[${GREEN}$LOGTAG${NOCOLOR}][[${YELLOW}WARN${NOCOLOR}] ${YELLOW}$1${NOCOLOR}" >&2
 }
 
 log_error() {
-    echo -e "[$LOGTAG][[${RED}ERROR${NOCOLOR}] ${RED}$1${NOCOLOR}" >&2
+    echo -e "[${GREEN}$LOGTAG${NOCOLOR}][[${RED}ERROR${NOCOLOR}] ${RED}$1${NOCOLOR}" >&2
 }
 
 check_command() {
