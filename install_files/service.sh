@@ -198,12 +198,13 @@ init_clash_api() {
 
 connection_check() {
   [ "$CONN_CHECKS_ENABLED" = 1 ] && {
-    CHECK_FAILURE=0
-    CHECK_FAILURE_COUNT=0
-    CHECK_SUCCESS=1
-    CHECK_SUCCESS_COUNT=0
+    local CHECK_FAILURE=0
+    local CHECK_FAILURE_COUNT=0
+    local CHECK_SUCCESS=1
+    local CHECK_SUCCESS_COUNT=0
+    local RETRYING=0
     while true; do
-      is_tproxy_chain_initialized=$(nft -j list chain inet nftclash transparent_proxy 2> /dev/null | jq -e '.nftables | map(select(.rule)) | length != 0')
+      local is_tproxy_chain_initialized=$(nft -j list chain inet nftclash transparent_proxy 2> /dev/null | jq -e '.nftables | map(select(.rule)) | length != 0')
 
       if [ "$CLASH_API_READY" = 1 ]; then
         curl -x "socks5://127.0.0.1:$socks_port" -s "$CONN_CHECKS_URL"&> /dev/null
@@ -213,11 +214,13 @@ connection_check() {
             CHECK_SUCCESS_COUNT=$(( CHECK_SUCCESS_COUNT + 1 ))
             if [ "$CHECK_SUCCESS_COUNT" -ge "$CONN_CHECKS_MIN_SUCCESSES" ]; then
               init_tproxy
-              log_warn "socks5 test success, init tproxy. (x$CHECK_SUCCESS_COUNT)"
+              log_info "socks5 test success, init tproxy. (x$CHECK_SUCCESS_COUNT)"
               CHECK_FAILURE=0
               CHECK_SUCCESS=1
+              RETRYING=0
             else
-              log_warn "socks5 test success. (x$CHECK_SUCCESS_COUNT)"
+              log_info "socks5 test success. (x$CHECK_SUCCESS_COUNT)"
+              RETRYING=1
             fi
           }
         else
@@ -229,14 +232,16 @@ connection_check() {
               log_warn "socks5 test failure, flush tproxy. (x$CHECK_FAILURE_COUNT)"
               CHECK_FAILURE=1
               CHECK_SUCCESS=0
+              RETRYING=1
             else
               log_warn "socks5 test failure. (x$CHECK_FAILURE_COUNT)"
+              RETRYING=1
             fi
           }
         fi
 
-        [ "$CHECK_FAILURE" = 1 ] && sleep "$CONN_CHECKS_RETRY_INTERVAL"
-        [ "$CHECK_SUCCESS" = 1 ] && sleep "$CONN_CHECKS_INTERVAL"
+        [ "$RETRYING" = 1 ] && sleep "$CONN_CHECKS_RETRY_INTERVAL"
+        [ "$RETRYING" = 0 ] && sleep "$CONN_CHECKS_INTERVAL"
       else
         sleep 1
       fi
