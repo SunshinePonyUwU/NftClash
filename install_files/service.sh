@@ -208,20 +208,19 @@ connection_check() {
       if [ "$CLASH_API_READY" = 1 ]; then
         curl -x "socks5://127.0.0.1:$socks_port" -s "$CONN_CHECKS_URL"&> /dev/null
         if [ $? -eq 0 ]; then
-          CHECK_FAILURE=0
           CHECK_FAILURE_COUNT=0
           [ "$is_tproxy_chain_initialized" = "false" ] && {
             CHECK_SUCCESS_COUNT=$(( CHECK_SUCCESS_COUNT + 1 ))
             if [ "$CHECK_SUCCESS_COUNT" -ge "$CONN_CHECKS_MIN_SUCCESSES" ]; then
               init_tproxy
               log_warn "socks5 test success, init tproxy. (x$CHECK_SUCCESS_COUNT)"
+              CHECK_FAILURE=0
               CHECK_SUCCESS=1
             else
               log_warn "socks5 test success. (x$CHECK_SUCCESS_COUNT)"
             fi
           }
         else
-          CHECK_SUCCESS=0
           CHECK_SUCCESS_COUNT=0
           [ "$is_tproxy_chain_initialized" = "true" ] && {
             CHECK_FAILURE_COUNT=$(( CHECK_FAILURE_COUNT + 1 ))
@@ -229,6 +228,7 @@ connection_check() {
               flush_tproxy
               log_warn "socks5 test failure, flush tproxy. (x$CHECK_FAILURE_COUNT)"
               CHECK_FAILURE=1
+              CHECK_SUCCESS=0
             else
               log_warn "socks5 test failure. (x$CHECK_FAILURE_COUNT)"
             fi
