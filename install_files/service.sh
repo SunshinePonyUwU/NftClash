@@ -26,6 +26,8 @@ HOST_IPV4=$(ubus call network.interface.lan status 2>&1 | jq -r '.["ipv4-address
 HOST_IPV6=$(ubus call network.interface.lan status 2>&1 | jq -r '.["ipv6-address"][0].address')
 [ "$HOST_IPV6" = "null" ] && HOST_IPV6=$(ubus call network.interface.lan status 2>&1 | jq -r '.["ipv6-prefix-assignment"][0].["local-address"].address')
 
+CLASH_API_READY=0
+
 log() {
   local level=$1
   local msg=$(echo -e "$2" | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g')
@@ -203,37 +205,41 @@ connection_check() {
     while true; do
       is_tproxy_chain_initialized=$(nft -j list chain inet nftclash transparent_proxy 2> /dev/null | jq -e '.nftables | map(select(.rule)) | length != 0')
 
-      curl -x "socks5://127.0.0.1:$socks_port" -s "$CONN_CHECKS_URL"&> /dev/null
-      if [ $? -eq 0 ]; then
-        [ "$is_tproxy_chain_initialized" = "false" ] && {
-          CHECK_SUCCESS_COUNT=$(( CHECK_SUCCESS_COUNT + 1 ))
-          if [ "$CHECK_SUCCESS_COUNT" -ge "$CONN_CHECKS_MIN_SUCCESSES" ]; then
-            init_tproxy
-            log_warn "socks5 test success, init tproxy. (x$CHECK_SUCCESS_COUNT)"
-            CHECK_FAILURE=0
-            CHECK_FAILURE_COUNT=0
-            CHECK_SUCCESS=1
-          else
-            log_warn "socks5 test success. (x$CHECK_SUCCESS_COUNT)"
-          fi
-        }
-      else
-        [ "$is_tproxy_chain_initialized" = "true" ] && {
-          CHECK_FAILURE_COUNT=$(( CHECK_FAILURE_COUNT + 1 ))
-          if [ "$CHECK_FAILURE_COUNT" -ge "$CONN_CHECKS_MAX_FAILURES" ]; then
-            flush_tproxy
-            log_warn "socks5 test failure, flush tproxy. (x$CHECK_FAILURE_COUNT)"
-            CHECK_FAILURE=1
-            CHECK_SUCCESS=0
-            CHECK_SUCCESS_COUNT=0
-          else
-            log_warn "socks5 test failure. (x$CHECK_FAILURE_COUNT)"
-          fi
-        }
-      fi
+      if [ "$CLASH_API_READY" = 1 ]; then
+        curl -x "socks5://127.0.0.1:$socks_port" -s "$CONN_CHECKS_URL"&> /dev/null
+        if [ $? -eq 0 ]; then
+          CHECK_FAILURE=0
+          CHECK_FAILURE_COUNT=0
+          [ "$is_tproxy_chain_initialized" = "false" ] && {
+            CHECK_SUCCESS_COUNT=$(( CHECK_SUCCESS_COUNT + 1 ))
+            if [ "$CHECK_SUCCESS_COUNT" -ge "$CONN_CHECKS_MIN_SUCCESSES" ]; then
+              init_tproxy
+              log_warn "socks5 test success, init tproxy. (x$CHECK_SUCCESS_COUNT)"
+              CHECK_SUCCESS=1
+            else
+              log_warn "socks5 test success. (x$CHECK_SUCCESS_COUNT)"
+            fi
+          }
+        else
+          CHECK_SUCCESS=0
+          CHECK_SUCCESS_COUNT=0
+          [ "$is_tproxy_chain_initialized" = "true" ] && {
+            CHECK_FAILURE_COUNT=$(( CHECK_FAILURE_COUNT + 1 ))
+            if [ "$CHECK_FAILURE_COUNT" -ge "$CONN_CHECKS_MAX_FAILURES" ]; then
+              flush_tproxy
+              log_warn "socks5 test failure, flush tproxy. (x$CHECK_FAILURE_COUNT)"
+              CHECK_FAILURE=1
+            else
+              log_warn "socks5 test failure. (x$CHECK_FAILURE_COUNT)"
+            fi
+          }
+        fi
 
-      [ "$CHECK_FAILURE" = 1 ] && sleep "$CONN_CHECKS_RETRY_INTERVAL"
-      [ "$CHECK_SUCCESS" = 1 ] && sleep "$CONN_CHECKS_INTERVAL"
+        [ "$CHECK_FAILURE" = 1 ] && sleep "$CONN_CHECKS_RETRY_INTERVAL"
+        [ "$CHECK_SUCCESS" = 1 ] && sleep "$CONN_CHECKS_INTERVAL"
+      else
+        sleep 1
+      fi
     done
   }
 }
@@ -444,9 +450,9 @@ check_update() {
 
 download_china_ip_list() {
   test=1
-  while [ -z "$clash_api_ready" -a "$test" -lt 30 ];do
+  while [ -z "$can_reach_files_repo" -a "$test" -lt 30 ];do
     sleep 1
-    clash_api_ready=$(curl -s $FILES_REPO_URL)
+    can_reach_files_repo=$(curl -s $FILES_REPO_URL)
     test=$((test+1))
   done
   log_warn "china_ip_list.txt does not exist!!!"
@@ -462,9 +468,9 @@ download_china_ip_list() {
 
 download_china_ipv6_list() {
   test=1
-  while [ -z "$clash_api_ready" -a "$test" -lt 30 ];do
+  while [ -z "$can_reach_files_repo" -a "$test" -lt 30 ];do
     sleep 1
-    clash_api_ready=$(curl -s $FILES_REPO_URL)
+    can_reach_files_repo=$(curl -s $FILES_REPO_URL)
     test=$((test+1))
   done
   log_warn "china_ipv6_list.txt does not exist!!!"
@@ -1038,6 +1044,7 @@ init_started() {
   [ "$INIT_CHECKS_ENABLED" = 0 ] && {
     init_fw
     log_info "CLASH SERVICE STARTED"
+    CLASH_API_READY=1
   }
   return 0
 }
@@ -1052,6 +1059,7 @@ init_check() {
           CHECK_FAILURE=0
           init_fw
           log_info "CLASH SERVICE STARTED"
+          CLASH_API_READY=1
           break
         fi
         CHECK_FAILURE_COUNT=$(( CHECK_FAILURE_COUNT + 1 ))
@@ -1136,10 +1144,15 @@ case "$1" in
     set_conf $2 $3
     ;;
   conn_check)
+    CLASH_API_READY=1
     connection_check
     ;;
   init_check)
     init_check
+    ;;
+  init_conn_check)
+    init_check
+    connection_check
     ;;
   clash_api_fetch)
     clash_api_fetch $2 $3 $4

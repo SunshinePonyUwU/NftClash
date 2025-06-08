@@ -25,13 +25,7 @@ start_service() {
 	procd_open_instance
 	procd_set_param stdout 0
 	procd_set_param stderr 0
-	procd_set_param command $DIR/service.sh conn_check
-	procd_close_instance
-	# Init Checcks
-	procd_open_instance
-	procd_set_param stdout 0
-	procd_set_param stderr 0
-	procd_set_param command $DIR/service.sh init_check
+	procd_set_param command $DIR/service.sh init_conn_check
 	procd_close_instance
 }
 
