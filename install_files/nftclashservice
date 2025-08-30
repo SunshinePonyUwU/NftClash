@@ -9,6 +9,12 @@ USE_PROCD=1
 DIR=/etc/nftclash
 CLASH_HOME_DIR=$DIR/clash
 
+extra_command "flush_fw" "Flush firewall rules"
+extra_command "reload_fw" "Reinit firewall rules"
+extra_command "reload_clash" "Reload clash config"
+extra_command "update_clash" "Update clash config"
+extra_command "check_update" "Check service update"
+
 start_service() {
 	$DIR/service.sh init_startup || return 1
 	$DIR/service.sh init_started || return 1
@@ -36,4 +42,26 @@ stop_service() {
 reload_service() {
 	$DIR/service.sh reinit_fw
 	$DIR/service.sh reload_clash_config
+}
+
+# Extra Commands
+
+flush_fw() {
+	$DIR/service.sh flush_fw
+}
+
+reload_fw() {
+	$DIR/service.sh reinit_fw
+}
+
+reload_clash() {
+	$DIR/service.sh reload_clash_config
+}
+
+update_clash() {
+	$DIR/service.sh update_clash_config
+}
+
+check_update() {
+	$DIR/service.sh check_update
 }
