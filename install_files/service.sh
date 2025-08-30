@@ -103,6 +103,7 @@ init_config() {
   BYPASS_DEST_PORT_LIST="123,3478-3479"
   PROXY_COMMON_PORT_ENABLED=0
   PROXY_COMMON_PORT_LIST="22,53,80,123,143,194,443,465,587,853,993,995,5222,8080,8443"
+  PROXY_COMMON_PORT_LOCAL_ENABLED=0
   PROXY_COMMON_PORT_MAC_LIST_ENABLED=0
   BYPASS_CN_IP_ENABLED=1
   BYPASS_PASS_IP_ENABLED=1
@@ -139,6 +140,7 @@ init_config() {
     set_config BYPASS_DEST_PORT_LIST $BYPASS_DEST_PORT_LIST
     set_config PROXY_COMMON_PORT_ENABLED $PROXY_COMMON_PORT_ENABLED
     set_config PROXY_COMMON_PORT_LIST $PROXY_COMMON_PORT_LIST
+    set_config PROXY_COMMON_PORT_LOCAL_ENABLED $PROXY_COMMON_PORT_LOCAL_ENABLED
     set_config PROXY_COMMON_PORT_MAC_LIST_ENABLED $PROXY_COMMON_PORT_MAC_LIST_ENABLED
     set_config BYPASS_CN_IP_ENABLED $BYPASS_CN_IP_ENABLED
     set_config BYPASS_PASS_IP_ENABLED $BYPASS_PASS_IP_ENABLED
@@ -952,7 +954,21 @@ init_fw() {
   nft add rule inet nftclash output ip6 daddr {$RESERVED_IP6} return
   nft add rule inet nftclash output jump bypass_proxy
 
-  [ "$PROXY_COMMON_PORT_ENABLED" = 1 ] && {
+  [ "$BYPASS_SOURCE_PORT_ENABLED" = 1 ] && {
+    SOURCE_PORT_LIST=$(echo $BYPASS_SOURCE_PORT_LIST | sed 's/,/, /g')
+    [ -n "$SOURCE_PORT_LIST" ] && {
+      nft add rule inet nftclash output tcp sport {$SOURCE_PORT_LIST} return
+    }
+  }
+
+  [ "$BYPASS_DEST_PORT_ENABLED" = 1 ] && {
+    DEST_PORT_LIST=$(echo $BYPASS_DEST_PORT_LIST | sed 's/,/, /g')
+    [ -n "$DEST_PORT_LIST" ] && {
+      nft add rule inet nftclash output tcp dport {$DEST_PORT_LIST} return
+    }
+  }
+
+  [ "$PROXY_COMMON_PORT_ENABLED" = 1 ] && [ "$PROXY_COMMON_PORT_LOCAL_ENABLED" = 1 ] && {
     COMMON_PORT_LIST=$(echo $PROXY_COMMON_PORT_LIST | sed 's/,/, /g')
     [ -n "$COMMON_PORT_LIST" ] && {
       nft add rule inet nftclash output tcp dport != {$COMMON_PORT_LIST} return
