@@ -295,7 +295,12 @@ set_conf_force() {
 # LINK, PATH, UA
 download_file() {
   [ -z "$3" ] && ua="nftclash-download" || ua=$3
-  wget -O "$2" "$1" -U "$ua"
+  curl -fL -o "$2" -A "$ua" --progress-bar "$1"
+  if [ $? -eq 0 ]; then
+    log_info "download_file $1 $2 $ua (success)"
+  else
+    log_error "download_file $1 $2 $ua (failure)"
+  fi
 }
 
 fetch_files_repo(){
