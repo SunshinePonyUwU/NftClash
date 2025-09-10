@@ -1244,6 +1244,11 @@ case "$1" in
   clash_api_fetch)
     clash_api_fetch $2 $3 $4
     ;;
+  test_log_print)
+    log_info "log_info"
+    log_warn "log_warn"
+    log_error "log_error"
+    ;;
   *)
     return 1
     ;;
