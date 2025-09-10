@@ -67,14 +67,14 @@ log_warn() {
     local msg=$1
 
     log warn "$msg"
-    echo -e "[${GREEN}$LOGTAG_ECHO${NOCOLOR}][[${YELLOW}WARN${NOCOLOR}] ${YELLOW}$msg${NOCOLOR}" >&2
+    echo -e "[${GREEN}$LOGTAG_ECHO${NOCOLOR}][${YELLOW}WARN${NOCOLOR}] ${YELLOW}$msg${NOCOLOR}" >&2
 }
 
 log_error() {
     local msg=$1
 
     log err "$msg"
-    echo -e "[${GREEN}$LOGTAG_ECHO${NOCOLOR}][[${RED}ERROR${NOCOLOR}] ${RED}$msg${NOCOLOR}" >&2
+    echo -e "[${GREEN}$LOGTAG_ECHO${NOCOLOR}][${RED}ERROR${NOCOLOR}] ${RED}$msg${NOCOLOR}" >&2
 }
 
 check_command() {
