@@ -385,10 +385,14 @@ silent_update_clash_config() {
   if [ "$CLASH_CONFIG_UPDATE_ENABLED" = 1 ] && [ "$CLASH_CONFIG_UPDATE_URL" != "" ]; then
     [ -z "$CLASH_CONFIG_UPDATE_UA" ] && download_ua="nftclash-download/config-update-silent" || download_ua=$CLASH_CONFIG_UPDATE_UA
     download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml" "$download_ua"
-    chmod 777 "$CLASH_HOME_DIR/config.yaml"
-    clash_api_fetch PUT "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" &> /dev/null && {
-      log_info "UPDATE CLASH CONFIG DONE!!!"
-    }
+    if [ $? -eq 0 ]; then
+      chmod 777 "$CLASH_HOME_DIR/config.yaml"
+      clash_api_fetch PUT "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" &> /dev/null && {
+        log_info "UPDATE CLASH CONFIG DONE!!!"
+      }
+    else
+      log_warn "UPDATE CLASH CONFIG FAILED!!!"
+    fi
   fi
 }
 
@@ -397,11 +401,15 @@ update_clash_config() {
     log_info "UPDATE CLASH CONFIG"
     [ -z "$CLASH_CONFIG_UPDATE_UA" ] && download_ua="nftclash-download/config-update" || download_ua=$CLASH_CONFIG_UPDATE_UA
     download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml" "$download_ua"
-    chmod 777 "$CLASH_HOME_DIR/config.yaml"
-    log_info "RELOAD CONFIG"
-    clash_api_fetch PUT "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" && {
-      log_info "UPDATE CLASH CONFIG DONE!!!"
-    }
+    if [ $? -eq 0 ]; then
+      chmod 777 "$CLASH_HOME_DIR/config.yaml"
+      log_info "RELOAD CONFIG"
+      clash_api_fetch PUT "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" && {
+        log_info "UPDATE CLASH CONFIG DONE!!!"
+      }
+    else
+      log_warn "UPDATE CLASH CONFIG FAILED!!!"
+    fi
   else
     log_error "please configure CLASH_CONFIG_UPDATE_ENABLED and CLASH_CONFIG_UPDATE_URL"
   fi
@@ -412,6 +420,10 @@ check_update() {
   # When the code is 0 means the download was successful.
   local download_code_china_ipv4_list=2
   local download_code_china_ipv6_list=2
+  local download_code_install_sh=2
+  local download_code_nftclashservice=2
+  local download_code_service_sh=2
+  local download_code_version=2
   if [ "$arg1" = "force" ]; then
     VERSION_SERVICE=0
     VERSION_CHINA_IPLIST=0
@@ -447,12 +459,21 @@ check_update() {
     case "$ReadLine" in
       "y")
         download_file "$REPO_URL/install_files/install.sh" "$DIR/install/install.sh"
+        download_code_install_sh=$?
         download_file "$REPO_URL/install_files/nftclashservice" "$DIR/install/nftclashservice"
+        download_code_nftclashservice=$?
         download_file "$REPO_URL/install_files/service.sh" "$DIR/install/service.sh"
+        download_code_service_sh=$?
         download_file "$REPO_URL/install_files/version" "$DIR/install/version"
-        chmod 777 -R "$DIR/install/"
-        $DIR/install/install.sh
-        set_config VERSION_SERVICE "$latest_service_version" "$VERSION_PATH"
+        download_code_version=$?
+        [ "$download_code_install_sh" = 0 ] &&\
+        [ "$download_code_nftclashservice" = 0 ] &&\
+        [ "$download_code_service_sh" = 0 ] &&\
+        [ "$download_code_version" = 0 ] && {
+          chmod 777 -R "$DIR/install/"
+          $DIR/install/install.sh
+          set_config VERSION_SERVICE "$latest_service_version" "$VERSION_PATH"
+        }
         ;;
     esac
   fi
