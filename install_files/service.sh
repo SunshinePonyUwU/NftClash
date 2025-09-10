@@ -1109,6 +1109,11 @@ init_startup() {
   fi
   # env
   [ ! -d "$DIR/env" ] && mkdir -p "$DIR/env"
+  [ ! -e "$DIR/env/DISABLE_EMBED_CA" ] && touch "$DIR/env/DISABLE_EMBED_CA"
+  [ ! -e "$DIR/env/DISABLE_SYSTEM_CA" ] && touch "$DIR/env/DISABLE_SYSTEM_CA"
+  [ ! -e "$DIR/env/DISABLE_LOOPBACK_DETECTOR" ] && touch "$DIR/env/DISABLE_LOOPBACK_DETECTOR"
+  [ ! -e "$DIR/env/SKIP_SYSTEM_IPV6_CHECK" ] && touch "$DIR/env/SKIP_SYSTEM_IPV6_CHECK"
+  [ ! -e "$DIR/env/SKIP_SAFE_PATH_CHECK" ] && touch "$DIR/env/SKIP_SAFE_PATH_CHECK"
   [ ! -e "$DIR/env/SAFE_PATHS" ] && touch "$DIR/env/SAFE_PATHS"
   return 0
 }
