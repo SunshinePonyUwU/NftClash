@@ -338,6 +338,8 @@ clash_api_fetch() {
 }
 
 silent_update_china_iplist() {
+  local download_code_china_ipv4_list=2
+  local download_code_china_ipv6_list=2
   if [ -e "$VERSION_PATH" ]; then
     source $VERSION_PATH
   else
@@ -353,22 +355,25 @@ silent_update_china_iplist() {
   if [ "$BYPASS_CN_IP_ENABLED" = 1 ]; then
     if [ -n "$VERSION_CHINA_IPLIST" ]; then
       if [ ! $VERSION_CHINA_IPLIST -eq $latest_china_iplist_version ]; then
-        rm -f "$DIR/ipset/china_ip_list.txt"
-        rm -f "$DIR/ipset/china_ipv6_list.txt"
         download_file "$FILES_REPO_URL/china_ip_list.txt" "$DIR/ipset/china_ip_list.txt"
+        download_code_china_ipv4_list=$?
         download_file "$FILES_REPO_URL/china_ipv6_list.txt" "$DIR/ipset/china_ipv6_list.txt"
-        chmod 777 "$DIR/ipset/china_ip_list.txt"
-        chmod 777 "$DIR/ipset/china_ipv6_list.txt"
-        set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
-        nft list set inet nftclash cn_ip &> /dev/null && {
-          nft flush set inet nftclash cn_ip
-          nft add element inet nftclash cn_ip {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")}
+        download_code_china_ipv6_list=$?
+        [ "$download_code_china_ipv4_list" = 0 ] &&\
+        [ "$download_code_china_ipv6_list" = 0 ] && {
+          chmod 777 "$DIR/ipset/china_ip_list.txt"
+          chmod 777 "$DIR/ipset/china_ipv6_list.txt"
+          set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
+          nft list set inet nftclash cn_ip &> /dev/null && {
+            nft flush set inet nftclash cn_ip
+            nft add element inet nftclash cn_ip {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")}
+          }
+          nft list set inet nftclash cn_ip6 &> /dev/null && {
+            nft flush set inet nftclash cn_ip6
+            nft add element inet nftclash cn_ip6 {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")}
+          }
+          log_info "UPDATE CHINA IP DONE!!! VER: $latest_china_iplist_version"
         }
-        nft list set inet nftclash cn_ip6 &> /dev/null && {
-          nft flush set inet nftclash cn_ip6
-          nft add element inet nftclash cn_ip6 {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")}
-        }
-        log_info "UPDATE CHINA IP DONE!!! VER: $latest_china_iplist_version"
       fi
     fi
   fi
