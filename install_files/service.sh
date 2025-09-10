@@ -301,13 +301,13 @@ download_file() {
   [ -n "$3" ] && ua=$3
   [ -f "$path" ] && path_exist=1
   [ "$path_exist" = 1 ] && mv "$path" "$path.dl_bak"
+  log_info "downloading $link"
   curl -fL -o "$path" -A "$ua" --progress-bar "$link"
   if [ $? -eq 0 ]; then
-    log_info "download_file $link $path $ua (success)"
     [ "$path_exist" = 1 ] && rm -f "$path.dl_bak"
     return 0
   else
-    log_error "download_file $link $path $ua (failure)"
+    log_error "download failure!!!"
     [ "$path_exist" = 1 ] && {
       rm -f "$path"
       mv "$path.dl_bak" "$path"
