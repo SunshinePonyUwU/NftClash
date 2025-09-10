@@ -297,17 +297,21 @@ download_file() {
   local link=$1
   local path=$2
   local ua="nftclash-download"
+  local path_exist=0
   [ -n "$3" ] && ua=$3
-  mv "$path" "$path.dl_bak"
+  [ -f "$path" ] && path_exist=1
+  [ "$path_exist" = 1 ] && mv "$path" "$path.dl_bak"
   curl -fL -o "$path" -A "$ua" --progress-bar "$link"
   if [ $? -eq 0 ]; then
     log_info "download_file $link $path $ua (success)"
-    rm -f "$path.dl_bak"
+    [ "$path_exist" = 1 ] && rm -f "$path.dl_bak"
     return 0
   else
     log_error "download_file $link $path $ua (failure)"
-    rm -f "$path"
-    mv "$path.dl_bak" "$path"
+    [ "$path_exist" = 1 ] && {
+      rm -f "$path"
+      mv "$path.dl_bak" "$path"
+    }
     return 1
   fi
   return $?
@@ -461,9 +465,6 @@ check_update() {
         read -p "Do you want update right now? [y|N]: " ReadLine
         case "$ReadLine" in
           "y")
-            log_info "Moving old china ip list"
-            mv "$DIR/ipset/china_ip_list.txt" "$DIR/ipset/china_ip_list.txt.old"
-            mv "$DIR/ipset/china_ipv6_list.txt" "$DIR/ipset/china_ipv6_list.txt.old"
             download_file "$FILES_REPO_URL/china_ip_list.txt" "$DIR/ipset/china_ip_list.txt"
             download_code_china_ipv4_list=$?
             download_file "$FILES_REPO_URL/china_ipv6_list.txt" "$DIR/ipset/china_ipv6_list.txt"
