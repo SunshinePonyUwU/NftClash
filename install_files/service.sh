@@ -298,9 +298,12 @@ download_file() {
   curl -fL -o "$2" -A "$ua" --progress-bar "$1"
   if [ $? -eq 0 ]; then
     log_info "download_file $1 $2 $ua (success)"
+    return 0
   else
     log_error "download_file $1 $2 $ua (failure)"
+    return 1
   fi
+  return $?
 }
 
 fetch_files_repo(){
@@ -481,7 +484,7 @@ download_china_ip_list() {
     test=$((test+1))
   done
   log_warn "china_ip_list.txt does not exist!!!"
-  wget -O "$DIR/ipset/china_ip_list.txt" "$FILES_REPO_URL/china_ip_list.txt"
+  download_file "$FILES_REPO_URL/china_ip_list.txt" "$DIR/ipset/china_ip_list.txt"
   if [ "$?" = "0" ]; then
     update_china_iplist_version
     chmod 777 "$DIR/ipset/china_ip_list.txt"
@@ -499,7 +502,7 @@ download_china_ipv6_list() {
     test=$((test+1))
   done
   log_warn "china_ipv6_list.txt does not exist!!!"
-  wget -O "$DIR/ipset/china_ipv6_list.txt" "$FILES_REPO_URL/china_ipv6_list.txt"
+  download_file "$FILES_REPO_URL/china_ipv6_list.txt" "$DIR/ipset/china_ipv6_list.txt"
   if [ "$?" = "0" ]; then
     update_china_iplist_version
     chmod 777 "$DIR/ipset/china_ipv6_list.txt"
