@@ -294,13 +294,20 @@ set_conf_force() {
 
 # LINK, PATH, UA
 download_file() {
-  [ -z "$3" ] && ua="nftclash-download" || ua=$3
-  curl -fL -o "$2" -A "$ua" --progress-bar "$1"
+  local link=$1
+  local path=$2
+  local ua="nftclash-download"
+  [ -n "$3" ] && ua=$3
+  mv "$path" "$path.dl_bak"
+  curl -fL -o "$path" -A "$ua" --progress-bar "$link"
   if [ $? -eq 0 ]; then
-    log_info "download_file $1 $2 $ua (success)"
+    log_info "download_file $link $path $ua (success)"
+    rm -f "$path.dl_bak"
     return 0
   else
-    log_error "download_file $1 $2 $ua (failure)"
+    log_error "download_file $link $path $ua (failure)"
+    rm -f "$path"
+    mv "$path.dl_bak" "$path"
     return 1
   fi
   return $?
@@ -398,6 +405,9 @@ update_clash_config() {
 
 check_update() {
   local arg1=$1
+  # When the code is 0 means the download was successful.
+  local download_code_china_ipv4_list=2
+  local download_code_china_ipv6_list=2
   if [ "$arg1" = "force" ]; then
     VERSION_SERVICE=0
     VERSION_CHINA_IPLIST=0
@@ -451,23 +461,28 @@ check_update() {
         read -p "Do you want update right now? [y|N]: " ReadLine
         case "$ReadLine" in
           "y")
-            log_info "Removing old china ip list"
-            rm -f "$DIR/ipset/china_ip_list.txt"
-            rm -f "$DIR/ipset/china_ipv6_list.txt"
+            log_info "Moving old china ip list"
+            mv "$DIR/ipset/china_ip_list.txt" "$DIR/ipset/china_ip_list.txt.old"
+            mv "$DIR/ipset/china_ipv6_list.txt" "$DIR/ipset/china_ipv6_list.txt.old"
             download_file "$FILES_REPO_URL/china_ip_list.txt" "$DIR/ipset/china_ip_list.txt"
+            download_code_china_ipv4_list=$?
             download_file "$FILES_REPO_URL/china_ipv6_list.txt" "$DIR/ipset/china_ipv6_list.txt"
+            download_code_china_ipv6_list=$?
             chmod 777 "$DIR/ipset/china_ip_list.txt"
             chmod 777 "$DIR/ipset/china_ipv6_list.txt"
-            set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
-            nft list set inet nftclash cn_ip &> /dev/null && {
-              log_info "UPDATE CHINA IP SET"
-              nft flush set inet nftclash cn_ip
-              nft add element inet nftclash cn_ip {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")}
-            }
-            nft list set inet nftclash cn_ip6 &> /dev/null && {
-              log_info "UPDATE CHINA IPV6 SET"
-              nft flush set inet nftclash cn_ip6
-              nft add element inet nftclash cn_ip6 {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")}
+            [ "$download_code_china_ipv4_list" = 0 ] &&\
+            [ "$download_code_china_ipv6_list" = 0 ] && {
+              set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
+              nft list set inet nftclash cn_ip &> /dev/null && {
+                log_info "UPDATE CHINA IP SET"
+                nft flush set inet nftclash cn_ip
+                nft add element inet nftclash cn_ip {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")}
+              }
+              nft list set inet nftclash cn_ip6 &> /dev/null && {
+                log_info "UPDATE CHINA IPV6 SET"
+                nft flush set inet nftclash cn_ip6
+                nft add element inet nftclash cn_ip6 {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")}
+              }
             }
             ;;
         esac
