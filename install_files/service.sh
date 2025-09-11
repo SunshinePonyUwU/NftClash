@@ -201,7 +201,7 @@ init_clash_api() {
   fi
 }
 
-init_loopback_list() {
+refresh_loopback_list() {
   local wan_zone_section=$(uci show firewall | grep -E "(@zone\[[0-9]+\]|@zone\[[a-zA-Z0-9_]+\])\.name='wan'" | cut -d'=' -f1 | cut -d'.' -f1-2)
   [ -z "$wan_zone_section" ] && {
     log_error "firewall zone 'wan' is net exist!!!"
@@ -574,6 +574,7 @@ check_update() {
   # When the code is 0 means the download was successful.
   local download_code_china_ipv4_list=2
   local download_code_china_ipv6_list=2
+  local download_code_hotplug=2
   local download_code_install_sh=2
   local download_code_nftclashservice=2
   local download_code_service_sh=2
@@ -614,6 +615,8 @@ check_update() {
     read -p "Do you want update right now? [y|N]: " ReadLine
     case "$ReadLine" in
       "y")
+        download_file "$REPO_URL/install_files/hotplug" "$DIR/install/hotplug"
+        download_code_hotplug=$?
         download_file "$REPO_URL/install_files/install.sh" "$DIR/install/install.sh"
         download_code_install_sh=$?
         download_file "$REPO_URL/install_files/nftclashservice" "$DIR/install/nftclashservice"
@@ -622,6 +625,7 @@ check_update() {
         download_code_service_sh=$?
         download_file "$REPO_URL/install_files/version" "$DIR/install/version"
         download_code_version=$?
+        [ "$download_code_hotplug" = 0 ] &&\
         [ "$download_code_install_sh" = 0 ] &&\
         [ "$download_code_nftclashservice" = 0 ] &&\
         [ "$download_code_service_sh" = 0 ] &&\
@@ -1108,7 +1112,7 @@ init_fw() {
   nft add rule inet nftclash prerouting ip6 daddr @loopback_ipv6_list return
   nft add rule inet nftclash prerouting_nat ip6 daddr @loopback_ipv6_list return
 
-  init_loopback_list
+  refresh_loopback_list
 
   # Transparent proxy chain
   log_info "INIT TPROXY CHAIN"
@@ -1401,8 +1405,8 @@ case "$1" in
   set_conf_force)
     set_conf_force $2 $3
     ;;
-  init_loopback_list)
-    init_loopback_list
+  refresh_loopback_list)
+    refresh_loopback_list $2 $3 $4
     ;;
   conn_check)
     CLASH_API_READY=1
