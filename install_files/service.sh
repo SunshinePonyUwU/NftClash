@@ -1100,6 +1100,10 @@ init_fw() {
   nft add rule inet nftclash output meta skgid 7890 return
   nft add rule inet nftclash output ip daddr {$RESERVED_IP} return
   nft add rule inet nftclash output ip6 daddr {$RESERVED_IP6} return
+
+  nft add rule inet nftclash output ip daddr @loopback_ipv4_list return
+  nft add rule inet nftclash output ip6 daddr @loopback_ipv6_list return
+
   nft add rule inet nftclash output jump bypass_proxy
 
   [ "$BYPASS_SOURCE_PORT_ENABLED" = 1 ] && {
