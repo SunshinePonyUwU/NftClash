@@ -259,6 +259,9 @@ loopback_check() {
             fi
           done
         done
+        log_info "loopback_check ipv4_addr_list = $ipv4_addr_list"
+        log_info "loopback_check ipv6_addr_list = $ipv6_addr_list"
+        log_info "loopback_check ipv6_prefix_list = $ipv6_prefix_list"
         nft flush set inet nftclash loopback_ipv4_list
         [ -n "$ipv4_addr_list" ] && nft add element inet nftclash loopback_ipv4_list {$ipv4_addr_list}
         nft flush set inet nftclash loopback_ipv6_list
