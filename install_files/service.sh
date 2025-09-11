@@ -201,7 +201,7 @@ init_clash_api() {
   fi
 }
 
-refresh_loopback_list() {
+loopback_check() {
   local wan_zone_section=$(uci show firewall | grep -E "(@zone\[[0-9]+\]|@zone\[[a-zA-Z0-9_]+\])\.name='wan'" | cut -d'=' -f1 | cut -d'.' -f1-2)
   [ -z "$wan_zone_section" ] && {
     log_error "firewall zone 'wan' is net exist!!!"
@@ -265,85 +265,6 @@ refresh_loopback_list() {
     nft flush set inet nftclash loopback_ipv6_list
     [ -n "$ipv6_addr_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_addr_list}
     [ -n "$ipv6_prefix_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_prefix_list}
-  }
-}
-
-loopback_check() {
-  [ "$LOOPBACK_CHECKS_ENABLED" = 1 ] && {
-    local wan_zone_section=$(uci show firewall | grep -E "(@zone\[[0-9]+\]|@zone\[[a-zA-Z0-9_]+\])\.name='wan'" | cut -d'=' -f1 | cut -d'.' -f1-2)
-    [ -z "$wan_zone_section" ] && {
-      log_error "firewall zone 'wan' is net exist!!!"
-      return 1
-    }
-    local wan_network_list=$(uci get "${wan_zone_section}.network" 2>/dev/null)
-    [ -z "$wan_network_list" ] && {
-      log_error "firewall zone 'wan' does not contain any interfaces!!!"
-      return 1
-    }
-    local prev_list=""
-    while true; do
-      local ipv4_addr_list=""
-      local ipv6_addr_list=""
-      local ipv6_prefix_list=""
-
-      nft list table inet nftclash&> /dev/null && {
-        for interface in $wan_network_list; do
-          local interface_status=$(ubus call "network.interface.${interface}" status 2>&1)
-          local ipv4_addrs=$(echo $interface_status | jq -r '.["ipv4-address"]?[]? | "\(.address)/\(.mask)"')
-          local ipv6_addrs=$(echo $interface_status | jq -r '.["ipv6-address"]?[]? | "\(.address)/\(.mask)" | select(startswith("fe80::") | not)')
-          local ipv6_prefx=$(echo $interface_status | jq -r '.["ipv6-prefix"]?[]? | "\(.address)/\(.mask)"')
-
-          # IPv4 Address
-          for ipv4_address in $ipv4_addrs; do
-            if [ -n "$ipv4_address" ]; then
-              if [ -n "$ipv4_addr_list" ]; then
-                  ipv4_addr_list="${ipv4_addr_list},${ipv4_address}"
-              else
-                  ipv4_addr_list="${ipv4_address}"
-              fi
-            fi
-          done
-
-          # IPv6 Address
-          for ipv6_address in $ipv6_addrs; do
-            if [ -n "$ipv6_address" ]; then
-              if [ -n "$ipv6_addr_list" ]; then
-                  ipv6_addr_list="${ipv6_addr_list},${ipv6_address}"
-              else
-                  ipv6_addr_list="${ipv6_address}"
-              fi
-            fi
-          done
-
-          # IPv6 Prefix
-          for ipv6_prefix in $ipv6_prefx; do
-            if [ -n "$ipv6_prefix" ]; then
-              if [ -n "$ipv6_prefix_list" ]; then
-                  ipv6_prefix_list="${ipv6_prefix_list},${ipv6_prefix}"
-              else
-                  ipv6_prefix_list="${ipv6_prefix}"
-              fi
-            fi
-          done
-        done
-        local current_list="${ipv4_addr_list}${ipv6_addr_list}${ipv6_prefix_list}"
-        if [ "$current_list" != "$prev_list" ]; then
-          prev_list=$current_list
-          log_info "loopback_check ipv4_addr_list = $ipv4_addr_list"
-          log_info "loopback_check ipv6_addr_list = $ipv6_addr_list"
-          log_info "loopback_check ipv6_prefix_list = $ipv6_prefix_list"
-          nft flush set inet nftclash loopback_ipv4_list
-          [ -n "$ipv4_addr_list" ] && nft add element inet nftclash loopback_ipv4_list {$ipv4_addr_list}
-          nft flush set inet nftclash loopback_ipv6_list
-          [ -n "$ipv6_addr_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_addr_list}
-          [ -n "$ipv6_prefix_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_prefix_list}
-        fi
-        
-      }
-      # 不确定 sleep 15 是否会太长或太短
-      # 使用一段时间后再根据实际情况更改此值
-      sleep 15
-    done
   }
 }
 
@@ -1112,7 +1033,7 @@ init_fw() {
   nft add rule inet nftclash prerouting ip6 daddr @loopback_ipv6_list return
   nft add rule inet nftclash prerouting_nat ip6 daddr @loopback_ipv6_list return
 
-  refresh_loopback_list
+  loopback_check
 
   # Transparent proxy chain
   log_info "INIT TPROXY CHAIN"
@@ -1407,7 +1328,7 @@ case "$1" in
     ;;
   hotplug)
     log_info "hotplug: $2 ($3)"
-    refresh_loopback_list
+    loopback_check
     ;;
   conn_check)
     CLASH_API_READY=1
