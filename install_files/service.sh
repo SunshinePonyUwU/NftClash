@@ -440,6 +440,8 @@ check_update() {
     VERSION_CHINA_IPLIST=0
   else
     if [ -e "$VERSION_PATH" ]; then
+      VERSION_SERVICE=0
+      VERSION_CHINA_IPLIST=0
       source $VERSION_PATH
       [ -z "$VERSION_SERVICE" ] && {
         log_error "version info is missing!!!"
