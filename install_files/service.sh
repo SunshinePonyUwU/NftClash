@@ -1405,8 +1405,9 @@ case "$1" in
   set_conf_force)
     set_conf_force $2 $3
     ;;
-  refresh_loopback_list)
-    refresh_loopback_list $2 $3 $4
+  hotplug)
+    log_info "hotplug: $2 ($3) $4"
+    refresh_loopback_list
     ;;
   conn_check)
     CLASH_API_READY=1

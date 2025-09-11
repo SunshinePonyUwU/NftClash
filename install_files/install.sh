@@ -4,7 +4,9 @@ if ! command -v nft >/dev/null 2>&1; then
 	exit 1
 fi
 
-cp /etc/nftclash/install/service.sh /etc/nftclash/service.sh && chmod 755 /etc/nftclash/service.sh
-cp /etc/nftclash/install/nftclashservice /etc/init.d/nftclash && chmod 755 /etc/init.d/nftclash && service nftclash enable
-[ ! -f /etc/nftclash/version ] && cp /etc/nftclash/install/version /etc/nftclash/version
+DIR=/etc/nftclash
 
+cp $DIR/install/service.sh $DIR/service.sh && chmod 755 $DIR/service.sh
+cp $DIR/install/nftclashservice /etc/init.d/nftclash && chmod 755 /etc/init.d/nftclash && service nftclash enable
+cp $DIR/install/hotplug /etc/hotplug.d/iface/99-nftclash && chmod 755 /etc/hotplug.d/iface/99-nftclash
+[ ! -f $DIR/version ] && cp $DIR/install/version $DIR/version
