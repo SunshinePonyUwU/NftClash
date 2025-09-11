@@ -222,8 +222,8 @@ loopback_check() {
       nft list table inet nftclash&> /dev/null && {
         for interface in $wan_network_list; do
           local interface_status=$(ubus call "network.interface.${interface}" status 2>&1)
-          local ipv4_addrs=$(echo $interface_status | jq -r '.["ipv4-address"]?[]?.address // empty')
-          local ipv6_addrs=$(echo $interface_status | jq -r '.["ipv6-address"]?[]?.address // empty | select(startswith("fe80::") | not)')
+          local ipv4_addrs=$(echo $interface_status | jq -r '.["ipv4-address"]?[]? | "\(.address)/\(.mask)"')
+          local ipv6_addrs=$(echo $interface_status | jq -r '.["ipv6-address"]?[]? | "\(.address)/\(.mask)" | select(startswith("fe80::") | not)')
           local ipv6_prefx=$(echo $interface_status | jq -r '.["ipv6-prefix"]?[]? | "\(.address)/\(.mask)"')
 
           # IPv4 Address
