@@ -25,6 +25,7 @@ start_service() {
 	ENV_SKIP_SYSTEM_IPV6_CHECK=$(cat "$DIR/env/SKIP_SYSTEM_IPV6_CHECK")
 	ENV_SKIP_SAFE_PATH_CHECK=$(cat "$DIR/env/SKIP_SAFE_PATH_CHECK")
 	ENV_SAFE_PATHS=$(cat "$DIR/env/SAFE_PATHS")
+	LOOPBACK_CHECKS_ENABLED=1
 	CLASH_LOG_STD=0
 	source $CONFIG_PATH
 	procd_open_instance
@@ -41,6 +42,14 @@ start_service() {
 	procd_set_param command $CLASH_HOME_DIR/clash -d $CLASH_HOME_DIR
 	procd_set_param user nftclash
 	procd_close_instance
+	# Loopback Checks
+	[ "$LOOPBACK_CHECKS_ENABLED" = 1 ] && {
+		procd_open_instance
+		procd_set_param stdout 0
+		procd_set_param stderr 0
+		procd_set_param command $DIR/service.sh loopback_check
+		procd_close_instance
+	}
 	# Connection Checks
 	procd_open_instance
 	procd_set_param stdout 0

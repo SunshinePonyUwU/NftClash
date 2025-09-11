@@ -116,7 +116,7 @@ init_config() {
   BYPASS_53_UDP=0
   REJECT_QUIC=0
   ICMP_REDIRECT=0
-  BYPASS_WAN_IP=1
+  LOOPBACK_CHECKS_ENABLED=1
   INIT_CHECKS_ENABLED=1
   CONN_CHECKS_ENABLED=1
   CONN_CHECKS_INTERVAL=300
@@ -155,7 +155,7 @@ init_config() {
     set_config BYPASS_53_UDP $BYPASS_53_UDP
     set_config REJECT_QUIC $REJECT_QUIC
     set_config ICMP_REDIRECT $ICMP_REDIRECT
-    set_config BYPASS_WAN_IP $BYPASS_WAN_IP
+    set_config LOOPBACK_CHECKS_ENABLED $LOOPBACK_CHECKS_ENABLED
     set_config INIT_CHECKS_ENABLED $INIT_CHECKS_ENABLED
     set_config CONN_CHECKS_ENABLED $CONN_CHECKS_ENABLED
     set_config CONN_CHECKS_INTERVAL $CONN_CHECKS_INTERVAL
@@ -203,7 +203,7 @@ init_clash_api() {
 }
 
 loopback_check() {
-  [ "$BYPASS_WAN_IP" = 1 ] && {
+  [ "$LOOPBACK_CHECKS_ENABLED" = 1 ] && {
     local wan_zone_section=$(uci show firewall | grep -E "(@zone\[[0-9]+\]|@zone\[[a-zA-Z0-9_]+\])\.name='wan'" | cut -d'=' -f1 | cut -d'.' -f1-2)
     [ -z "$wan_zone_section" ] && {
       log_error "firewall zone 'wan' is net exist!!!"
@@ -1331,7 +1331,6 @@ case "$1" in
     init_check
     ;;
   init_conn_check)
-    loopback_check
     init_check
     connection_check
     ;;
