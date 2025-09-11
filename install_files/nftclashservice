@@ -28,12 +28,12 @@ start_service() {
 	procd_set_param respawn
 	procd_set_param stderr 0
 	procd_set_param stdout 0
-	procd_set_param env DISABLE_EMBED_CA=$ENV_DISABLE_EMBED_CA
-	procd_set_param env DISABLE_SYSTEM_CA=$ENV_DISABLE_SYSTEM_CA
-	procd_set_param env DISABLE_LOOPBACK_DETECTOR=$ENV_DISABLE_LOOPBACK_DETECTOR
-	procd_set_param env SKIP_SYSTEM_IPV6_CHECK=$ENV_SKIP_SYSTEM_IPV6_CHECK
-	procd_set_param env SKIP_SAFE_PATH_CHECK=$ENV_SKIP_SAFE_PATH_CHECK
-	procd_set_param env SAFE_PATHS=$ENV_SAFE_PATHS
+	[ -n "$ENV_DISABLE_EMBED_CA" ] && procd_set_param env DISABLE_EMBED_CA=$ENV_DISABLE_EMBED_CA
+	[ -n "$ENV_DISABLE_SYSTEM_CA" ] && procd_set_param env DISABLE_SYSTEM_CA=$ENV_DISABLE_SYSTEM_CA
+	[ -n "$ENV_DISABLE_LOOPBACK_DETECTOR" ] && procd_set_param env DISABLE_LOOPBACK_DETECTOR=$ENV_DISABLE_LOOPBACK_DETECTOR
+	[ -n "$ENV_SKIP_SYSTEM_IPV6_CHECK" ] && procd_set_param env SKIP_SYSTEM_IPV6_CHECK=$ENV_SKIP_SYSTEM_IPV6_CHECK
+	[ -n "$ENV_SKIP_SAFE_PATH_CHECK" ] && procd_set_param env SKIP_SAFE_PATH_CHECK=$ENV_SKIP_SAFE_PATH_CHECK
+	[ -n "$ENV_SAFE_PATHS" ] && procd_set_param env SAFE_PATHS=$ENV_SAFE_PATHS
 	procd_set_param env DISABLE_NFTABLES=true
 	procd_set_param command $CLASH_HOME_DIR/clash -d $CLASH_HOME_DIR
 	procd_set_param user nftclash
