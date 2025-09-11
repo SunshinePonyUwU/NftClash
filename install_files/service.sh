@@ -479,7 +479,9 @@ check_update() {
         [ "$download_code_version" = 0 ] && {
           chmod 777 -R "$DIR/install/"
           $DIR/install/install.sh
-          set_config VERSION_SERVICE "$latest_service_version" "$VERSION_PATH"
+          local VERSION_SERVICE=0
+          source "$DIR/install/version"
+          set_config VERSION_SERVICE "$VERSION_SERVICE" "$VERSION_PATH"
         }
         ;;
     esac
