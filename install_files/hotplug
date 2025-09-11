@@ -1,4 +1,5 @@
 #!/bin/sh
 
 DIR=/etc/nftclash
+/etc/init.d/nftclash enabled || exit 0
 $DIR/service.sh hotplug $INTERFACE $ACTION
