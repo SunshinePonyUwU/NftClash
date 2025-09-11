@@ -1028,10 +1028,10 @@ init_fw() {
 
   nft add set inet nftclash loopback_ipv4_list { type ipv4_addr\; flags interval\; }
   nft add set inet nftclash loopback_ipv6_list { type ipv6_addr\; flags interval\; }
-  nft add rule inet nftclash prerouting ip daddr != @loopback_ipv4_list return
-  nft add rule inet nftclash prerouting_nat ip daddr != @loopback_ipv4_list return
-  nft add rule inet nftclash prerouting ip6 daddr != @loopback_ipv6_list return
-  nft add rule inet nftclash prerouting_nat ip6 daddr != @loopback_ipv6_list return
+  nft add rule inet nftclash prerouting ip daddr @loopback_ipv4_list return
+  nft add rule inet nftclash prerouting_nat ip daddr @loopback_ipv4_list return
+  nft add rule inet nftclash prerouting ip6 daddr @loopback_ipv6_list return
+  nft add rule inet nftclash prerouting_nat ip6 daddr @loopback_ipv6_list return
 
   # Transparent proxy chain
   log_info "INIT TPROXY CHAIN"
