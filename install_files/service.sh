@@ -214,6 +214,7 @@ loopback_check() {
       log_error "firewall zone 'wan' does not contain any interfaces!!!"
       return 1
     }
+    local prev_list=""
     while true; do
       local ipv4_addr_list=""
       local ipv6_addr_list=""
@@ -259,14 +260,19 @@ loopback_check() {
             fi
           done
         done
-        log_info "loopback_check ipv4_addr_list = $ipv4_addr_list"
-        log_info "loopback_check ipv6_addr_list = $ipv6_addr_list"
-        log_info "loopback_check ipv6_prefix_list = $ipv6_prefix_list"
-        nft flush set inet nftclash loopback_ipv4_list
-        [ -n "$ipv4_addr_list" ] && nft add element inet nftclash loopback_ipv4_list {$ipv4_addr_list}
-        nft flush set inet nftclash loopback_ipv6_list
-        [ -n "$ipv6_addr_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_addr_list}
-        [ -n "$ipv6_prefix_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_prefix_list}
+        local current_list="${ipv4_addr_list}${ipv6_addr_list}${ipv6_prefix_list}"
+        if [ "$current_list" != "$prev_list" ]; then
+          prev_list=$current_list
+          log_info "loopback_check ipv4_addr_list = $ipv4_addr_list"
+          log_info "loopback_check ipv6_addr_list = $ipv6_addr_list"
+          log_info "loopback_check ipv6_prefix_list = $ipv6_prefix_list"
+          nft flush set inet nftclash loopback_ipv4_list
+          [ -n "$ipv4_addr_list" ] && nft add element inet nftclash loopback_ipv4_list {$ipv4_addr_list}
+          nft flush set inet nftclash loopback_ipv6_list
+          [ -n "$ipv6_addr_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_addr_list}
+          [ -n "$ipv6_prefix_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_prefix_list}
+        fi
+        
       }
       # 不确定 sleep 15 是否会太长或太短
       # 使用一段时间后再根据实际情况更改此值
