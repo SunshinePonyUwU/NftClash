@@ -1406,7 +1406,7 @@ case "$1" in
     set_conf_force $2 $3
     ;;
   hotplug)
-    log_info "hotplug: $2 ($3) $4"
+    log_info "hotplug: $2 ($3)"
     refresh_loopback_list
     ;;
   conn_check)

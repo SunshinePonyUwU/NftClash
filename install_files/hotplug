@@ -1,4 +1,4 @@
 #!/bin/sh
 
 DIR=/etc/nftclash
-$DIR/service.sh hotplug $INTERFACE $DEVICE $ACTION
+$DIR/service.sh hotplug $INTERFACE $ACTION
