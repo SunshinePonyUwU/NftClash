@@ -8,5 +8,5 @@ DIR=/etc/nftclash
 
 cp $DIR/install/service.sh $DIR/service.sh && chmod 755 $DIR/service.sh
 cp $DIR/install/nftclashservice /etc/init.d/nftclash && chmod 755 /etc/init.d/nftclash && service nftclash enable
-cp $DIR/install/hotplug /etc/hotplug.d/iface/99-nftclash && chmod 755 /etc/hotplug.d/iface/99-nftclash
+cp $DIR/install/hotplug /etc/hotplug.d/iface/21-nftclash && chmod 755 /etc/hotplug.d/iface/21-nftclash
 [ ! -f $DIR/version ] && cp $DIR/install/version $DIR/version
