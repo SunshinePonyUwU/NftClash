@@ -1108,6 +1108,8 @@ init_fw() {
   nft add rule inet nftclash prerouting ip6 daddr @loopback_ipv6_list return
   nft add rule inet nftclash prerouting_nat ip6 daddr @loopback_ipv6_list return
 
+  init_loopback_list
+
   # Transparent proxy chain
   log_info "INIT TPROXY CHAIN"
   nft add chain inet nftclash transparent_proxy
