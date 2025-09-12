@@ -28,6 +28,8 @@ HOST_IPV6=$(ubus call network.interface.lan status 2>&1 | jq -r '.["ipv6-address
 
 CLASH_API_READY=0
 
+LOG_DEBUG=0
+
 log() {
   local level=$1
   local msg=$(echo -e "$2" | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g')
@@ -36,6 +38,7 @@ log() {
 
   case $level in
     debug)
+      [ "$LOG_DEBUG" = 1 ] && return 0
       priority="daemon.debug"
       level_text="DEBUG"
       ;;
@@ -1277,7 +1280,7 @@ flush_fw() {
   }
 }
 
-log info "$0 $*"
+log debug "$0 $*"
 init_config
 init_clash_api
 case "$1" in
