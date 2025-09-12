@@ -533,36 +533,38 @@ check_update() {
   }
   latest_service_version=$(echo "$update_data" | jq .service_version)
   latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
-  if [ $VERSION_SERVICE -eq $latest_service_version ]; then
-    log_info "${GREEN}SERVICE SCRIPT IS UP TO DATE${NOCOLOR}"
-  else
-    log_info "${YELLOW}SERVICE SCRIPT HAVE AN UPDATE${NOCOLOR}"
-    read -p "Do you want update right now? [y|N]: " ReadLine
-    case "$ReadLine" in
-      "y")
-        download_file "$REPO_URL/install_files/hotplug" "$DIR/install/hotplug"
-        download_code_hotplug=$?
-        download_file "$REPO_URL/install_files/install.sh" "$DIR/install/install.sh"
-        download_code_install_sh=$?
-        download_file "$REPO_URL/install_files/nftclashservice" "$DIR/install/nftclashservice"
-        download_code_nftclashservice=$?
-        download_file "$REPO_URL/install_files/service.sh" "$DIR/install/service.sh"
-        download_code_service_sh=$?
-        download_file "$REPO_URL/install_files/version" "$DIR/install/version"
-        download_code_version=$?
-        [ "$download_code_hotplug" = 0 ] &&\
-        [ "$download_code_install_sh" = 0 ] &&\
-        [ "$download_code_nftclashservice" = 0 ] &&\
-        [ "$download_code_service_sh" = 0 ] &&\
-        [ "$download_code_version" = 0 ] && {
-          chmod 777 -R "$DIR/install/"
-          $DIR/install/install.sh upgrade
-          local VERSION_SERVICE=0
-          source "$DIR/install/version"
-          set_config VERSION_SERVICE "$VERSION_SERVICE" "$VERSION_PATH"
-        }
-        ;;
-    esac
+  if [ -n "$VERSION_SERVICE" ]; then
+    if [ $VERSION_SERVICE -eq $latest_service_version ]; then
+      log_info "${GREEN}SERVICE SCRIPT IS UP TO DATE${NOCOLOR}"
+    else
+      log_info "${YELLOW}SERVICE SCRIPT HAVE AN UPDATE${NOCOLOR}"
+      read -p "Do you want update right now? [y|N]: " ReadLine
+      case "$ReadLine" in
+        "y")
+          download_file "$REPO_URL/install_files/hotplug" "$DIR/install/hotplug"
+          download_code_hotplug=$?
+          download_file "$REPO_URL/install_files/install.sh" "$DIR/install/install.sh"
+          download_code_install_sh=$?
+          download_file "$REPO_URL/install_files/nftclashservice" "$DIR/install/nftclashservice"
+          download_code_nftclashservice=$?
+          download_file "$REPO_URL/install_files/service.sh" "$DIR/install/service.sh"
+          download_code_service_sh=$?
+          download_file "$REPO_URL/install_files/version" "$DIR/install/version"
+          download_code_version=$?
+          [ "$download_code_hotplug" = 0 ] &&\
+          [ "$download_code_install_sh" = 0 ] &&\
+          [ "$download_code_nftclashservice" = 0 ] &&\
+          [ "$download_code_service_sh" = 0 ] &&\
+          [ "$download_code_version" = 0 ] && {
+            chmod 777 -R "$DIR/install/"
+            $DIR/install/install.sh upgrade
+            local VERSION_SERVICE=0
+            source "$DIR/install/version"
+            set_config VERSION_SERVICE "$VERSION_SERVICE" "$VERSION_PATH"
+          }
+          ;;
+      esac
+    fi
   fi
   if [ "$BYPASS_CN_IP_ENABLED" = 1 ]; then
     if [ -n "$VERSION_CHINA_IPLIST" ]; then
