@@ -141,7 +141,7 @@ init_config() {
   if [ -e "$CONFIG_PATH" ]; then
     source $CONFIG_PATH
   else
-    echo "Generating config"
+    log_info "generating config"
     touch $CONFIG_PATH
     set_config FILES_REPO_URL $FILES_REPO_URL
     set_config REPO_URL $REPO_URL
