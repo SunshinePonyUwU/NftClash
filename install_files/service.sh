@@ -38,7 +38,7 @@ log() {
 
   case $level in
     debug)
-      [ "$LOG_DEBUG" = 1 ] && return 0
+      [ "$LOG_DEBUG" != 1 ] && return 0
       priority="daemon.debug"
       level_text="DEBUG"
       ;;
