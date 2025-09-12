@@ -56,6 +56,13 @@ log() {
   logger -t "$LOGTAG" -p "$priority" "[$level_text] $msg"
 }
 
+log_notice() {
+    local msg=$1
+
+    log notice "$msg"
+    echo -e "[${GREEN}$LOGTAG_ECHO${NOCOLOR}][${GREEN}NOTICE${NOCOLOR}] ${GREEN}$msg${NOCOLOR}"
+}
+
 log_info() {
     local msg=$1
 
@@ -1223,8 +1230,8 @@ init_started() {
   if [ ! -d "$TMPDIR" ]; then
     mkdir -p "$TMPDIR"
   fi
-  log_info "${GREEN}API_URL: ${NOCOLOR}http://${HOST_IPV4}:${CLASH_API_PORT}"
-  log_info "${GREEN}API_URL: ${NOCOLOR}http://[${HOST_IPV6}]:${CLASH_API_PORT}"
+  log_notice "clash api url: ${NOCOLOR}http://${HOST_IPV4}:${CLASH_API_PORT}"
+  log_notice "clash api url: ${NOCOLOR}http://[${HOST_IPV6}]:${CLASH_API_PORT}"
   [ "$INIT_CHECKS_ENABLED" = 0 ] && {
     init_fw
     CLASH_API_READY=1
