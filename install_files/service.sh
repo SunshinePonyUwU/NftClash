@@ -388,10 +388,18 @@ clash_api_fetch() {
   local fetch_path=$2
   local fetch_data=$3
   [ -z "$fetch_method" ] && fetch_method="GET"
+  log_info "clash_api_fetch $fetch_method $fetch_path $fetch_data"
   if [ "$CLASH_API_AVAILABLE" = 1 ]; then
     curl -s -X "$fetch_method" -H "Authorization: Bearer ${CLASH_API_SECRET}" -H "Content-Type:application/json" "http://127.0.0.1:${CLASH_API_PORT}/${fetch_path}" -d "$fetch_data"
+    if [ "$?" = 0 ]; then
+      return 0
+    else
+      log_warn "clash_api_fetch $fetch_path failed!!!"
+      return 1
+    fi
   else
     log_warn "Clash Api is not available!!!"
+    return 1
   fi
 }
 
