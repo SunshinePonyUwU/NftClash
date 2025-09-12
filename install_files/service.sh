@@ -335,9 +335,10 @@ get_conf() {
 set_conf() {
   conf_name="$1"
   conf_value_new="$2"
+  extra_argument="$3"
   [ -z "$conf_name" ] && log_error "missing argument." && return 1
   eval "conf_value=\"\${$conf_name}\""
-  if [ -n "$conf_value" ]; then
+  if [ -n "$conf_value" ] || [ "$extra_argument" = "force" ]; then
     if [ -n "$conf_value_new" ]; then
       set_config $conf_name $conf_value_new && \
       log_info "SET CONFIG $conf_name=$conf_value_new DONE!"
@@ -1321,10 +1322,7 @@ case "$1" in
     get_conf $2
     ;;
   set_conf)
-    set_conf $2 $3
-    ;;
-  set_conf_force)
-    set_conf_force $2 $3
+    set_conf $2 $3 $4
     ;;
   hotplug)
     log_info "hotplug: $2 ($3)"
