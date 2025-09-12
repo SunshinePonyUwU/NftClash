@@ -295,12 +295,12 @@ connection_check() {
             CHECK_SUCCESS_COUNT=$(( CHECK_SUCCESS_COUNT + 1 ))
             if [ "$CHECK_SUCCESS_COUNT" -ge "$CONN_CHECKS_MIN_SUCCESSES" ]; then
               init_tproxy
-              log_info "connection_check socks5 test success, init tproxy. (x$CHECK_SUCCESS_COUNT)"
+              log_info "connection_check socks5 test success, init tproxy (x$CHECK_SUCCESS_COUNT)"
               CHECK_FAILURE=0
               CHECK_SUCCESS=1
               RETRYING=0
             else
-              log_info "connection_check socks5 test success. (x$CHECK_SUCCESS_COUNT)"
+              log_info "connection_check socks5 test success (x$CHECK_SUCCESS_COUNT)"
               RETRYING=1
             fi
           }
@@ -310,12 +310,12 @@ connection_check() {
             CHECK_FAILURE_COUNT=$(( CHECK_FAILURE_COUNT + 1 ))
             if [ "$CHECK_FAILURE_COUNT" -ge "$CONN_CHECKS_MAX_FAILURES" ]; then
               flush_tproxy
-              log_warn "connection_check socks5 test failure, flush tproxy. (x$CHECK_FAILURE_COUNT)"
+              log_warn "connection_check socks5 test failure, flush tproxy (x$CHECK_FAILURE_COUNT)"
               CHECK_FAILURE=1
               CHECK_SUCCESS=0
               RETRYING=1
             else
-              log_warn "connection_check socks5 test failure. (x$CHECK_FAILURE_COUNT)"
+              log_warn "connection_check socks5 test failure (x$CHECK_FAILURE_COUNT)"
               RETRYING=1
             fi
           }
@@ -350,7 +350,7 @@ set_conf() {
   if [ -n "$conf_value" ] || [ "$extra_argument" = "force" ]; then
     if [ -n "$conf_value_new" ]; then
       set_config $conf_name $conf_value_new && \
-      log_info "SET CONFIG $conf_name=$conf_value_new DONE!"
+      log_info "set_conf $conf_name=$conf_value_new"
     else
       log_error "new value is not defined."
     fi
@@ -407,7 +407,7 @@ clash_api_fetch() {
       return 1
     fi
   else
-    log_warn "Clash Api is not available!!!"
+    log_warn "clash api is not available!!!"
     return 1
   fi
 }
@@ -447,7 +447,7 @@ silent_update_china_iplist() {
             nft flush set inet nftclash cn_ip6
             nft add element inet nftclash cn_ip6 {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")}
           }
-          log_info "UPDATE CHINA IP DONE!!! VER: $latest_china_iplist_version"
+          log_info "silent_update_china_iplist success ($latest_china_iplist_version)"
         }
       fi
     fi
@@ -468,27 +468,26 @@ silent_update_clash_config() {
     if [ $? -eq 0 ]; then
       chmod 777 "$CLASH_HOME_DIR/config.yaml"
       clash_api_fetch PUT "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" &> /dev/null && {
-        log_info "UPDATE CLASH CONFIG DONE!!!"
+        log_info "silent_update_clash_config success"
       }
     else
-      log_warn "UPDATE CLASH CONFIG FAILED!!!"
+      log_warn "silent_update_clash_config failed"
     fi
   fi
 }
 
 update_clash_config() {
   if [ "$CLASH_CONFIG_UPDATE_ENABLED" = 1 ] && [ "$CLASH_CONFIG_UPDATE_URL" != "" ]; then
-    log_info "UPDATE CLASH CONFIG"
     [ -z "$CLASH_CONFIG_UPDATE_UA" ] && download_ua="nftclash-download/config-update" || download_ua=$CLASH_CONFIG_UPDATE_UA
     download_file "$CLASH_CONFIG_UPDATE_URL" "$CLASH_HOME_DIR/config.yaml" "$download_ua"
     if [ $? -eq 0 ]; then
       chmod 777 "$CLASH_HOME_DIR/config.yaml"
-      log_info "RELOAD CONFIG"
+      log_info "update_clash_config reload config"
       clash_api_fetch PUT "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" && {
-        log_info "UPDATE CLASH CONFIG DONE!!!"
+        log_info "update_clash_config success"
       }
     else
-      log_warn "UPDATE CLASH CONFIG FAILED!!!"
+      log_warn "update_clash_config failed"
     fi
   else
     log_error "please configure CLASH_CONFIG_UPDATE_ENABLED and CLASH_CONFIG_UPDATE_URL"
@@ -536,9 +535,9 @@ check_update() {
   latest_china_iplist_version=$(echo "$update_data" | jq .china_ip_version)
   if [ -n "$VERSION_SERVICE" ]; then
     if [ $VERSION_SERVICE -eq $latest_service_version ]; then
-      log_info "${GREEN}SERVICE SCRIPT IS UP TO DATE${NOCOLOR}"
+      log_info "${GREEN}service script is already the latest version${NOCOLOR}"
     else
-      log_info "${YELLOW}SERVICE SCRIPT HAVE AN UPDATE${NOCOLOR}"
+      log_info "${YELLOW}service script have an update${NOCOLOR}"
       read -p "Do you want update right now? [y|N]: " ReadLine
       case "$ReadLine" in
         "y")
@@ -570,9 +569,9 @@ check_update() {
   if [ "$BYPASS_CN_IP_ENABLED" = 1 ]; then
     if [ -n "$VERSION_CHINA_IPLIST" ]; then
       if [ $VERSION_CHINA_IPLIST -eq $latest_china_iplist_version ]; then
-        log_info "${GREEN}CHINA IP LIST IS UP TO DATE${NOCOLOR}"
+        log_info "${GREEN}china iplist is already the latest version${NOCOLOR}"
       else
-        log_info "${YELLOW}CHINA IP LIST HAVE AN UPDATE${NOCOLOR}"
+        log_info "${YELLOW}china iplist have an update${NOCOLOR}"
         read -p "Do you want update right now? [y|N]: " ReadLine
         case "$ReadLine" in
           "y")
@@ -586,12 +585,12 @@ check_update() {
             [ "$download_code_china_ipv6_list" = 0 ] && {
               set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
               nft list set inet nftclash cn_ip &> /dev/null && {
-                log_info "UPDATE CHINA IP SET"
+                log_info "update cn_ip set"
                 nft flush set inet nftclash cn_ip
                 nft add element inet nftclash cn_ip {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")}
               }
               nft list set inet nftclash cn_ip6 &> /dev/null && {
-                log_info "UPDATE CHINA IPV6 SET"
+                log_info "update cn_ip6 set"
                 nft flush set inet nftclash cn_ip6
                 nft add element inet nftclash cn_ip6 {$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")}
               }
@@ -681,7 +680,7 @@ process_proxy_fw_rules() {
 }
 
 init_proxy_list() {
-  log_info "INIT PROXY_LIST"
+  log_info "init_fw proxy_list"
   [ ! -e "$DIR/ruleset/src_ipv4_proxy_list.txt" ] && touch "$DIR/ruleset/src_ipv4_proxy_list.txt"
   [ ! -e "$DIR/ruleset/src_ipv6_proxy_list.txt" ] && touch "$DIR/ruleset/src_ipv6_proxy_list.txt"
   process_proxy_fw_rules "$DIR/ruleset/src_ipv4_proxy_list.txt" "src"
@@ -725,7 +724,7 @@ process_bypass_fw_rules() {
 }
 
 init_bypass_list() {
-  log_info "INIT BYPASS_LIST"
+  log_info "init_fw bypass_list"
   [ ! -e "$DIR/ruleset/src_ipv4_bypass_list.txt" ] && touch "$DIR/ruleset/src_ipv4_bypass_list.txt"
   [ ! -e "$DIR/ruleset/src_ipv6_bypass_list.txt" ] && touch "$DIR/ruleset/src_ipv6_bypass_list.txt"
   process_bypass_fw_rules "$DIR/ruleset/src_ipv4_bypass_list.txt" "src"
@@ -752,7 +751,7 @@ init_source_ip_list() {
 }
 
 init_source_ip_white_list() {
-  log_info "INIT SOURCE_IP_WHITE_LIST"
+  log_info "init_fw source_ip_white_list"
   nft add set inet nftclash source_ipv4_list { type ipv4_addr\; flags interval\; } && \
   nft add set inet nftclash source_ipv6_list { type ipv6_addr\; flags interval\; } && \
   nft add rule inet nftclash prerouting ip saddr != @source_ipv4_list return && \
@@ -772,7 +771,7 @@ init_source_ip_white_list() {
 }
 
 init_source_ip_black_list() {
-  log_info "INIT SOURCE_IP_BLACK_LIST"
+  log_info "init_fw source_ip_black_list"
   nft add set inet nftclash source_ipv4_list { type ipv4_addr\; flags interval\; } && \
   nft add set inet nftclash source_ipv6_list { type ipv6_addr\; flags interval\; } && \
   nft add rule inet nftclash prerouting ip saddr @source_ipv4_list return && \
@@ -809,7 +808,7 @@ init_mac_list() {
 }
 
 init_mac_white_list() {
-  log_info "INIT MAC_WHITE_LIST"
+  log_info "init_fw mac_white_list"
   nft add set inet nftclash ether_list { type ether_addr\; } && \
   nft add rule inet nftclash prerouting ether saddr != @ether_list return && \
   nft add rule inet nftclash prerouting_nat ether saddr != @ether_list return
@@ -820,7 +819,7 @@ init_mac_white_list() {
 }
 
 init_mac_black_list() {
-  log_info "INIT MAC_BLACK_LIST"
+  log_info "init_fw mac_black_list"
   nft add set inet nftclash ether_list { type ether_addr\; } && \
   nft add rule inet nftclash prerouting ether saddr @ether_list return && \
   nft add rule inet nftclash prerouting_nat ether saddr @ether_list return
@@ -831,7 +830,7 @@ init_mac_black_list() {
 }
 
 init_proxy_common_port_mac_list() {
-  log_info "INIT PROXY_COMMON_PORT_MAC_LIST"
+  log_info "init_fw proxy_common_port_mac_list"
   COMMON_PORT_LIST=$(echo $PROXY_COMMON_PORT_LIST | sed 's/,/, /g')
   nft add set inet nftclash proxy_common_port_ether_list { type ether_addr\; } && \
   [ -n "$COMMON_PORT_LIST" ] && {
@@ -845,7 +844,7 @@ init_proxy_common_port_mac_list() {
 }
 
 init_force_proxy_ip() {
-  log_info "INIT FORCE PROXY_IP"
+  log_info "init_fw force_proxy_ip"
   nft add set inet nftclash proxy_ip { type ipv4_addr\; flags interval\; } && \
   if [ -n "$(grep -v '^$' "$DIR/ipset/proxy_ip_list.txt")" ]; then
     PROXY_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/proxy_ip_list.txt")
@@ -854,7 +853,7 @@ init_force_proxy_ip() {
 }
 
 init_force_proxy_ipv6() {
-  log_info "INIT FORCE PROXY_IP6"
+  log_info "init_fw force_proxy_ipv6"
   nft add set inet nftclash proxy_ip6 { type ipv6_addr\; flags interval\; } && \
   if [ -n "$(grep -v '^$' "$DIR/ipset/proxy_ipv6_list.txt")" ]; then
     PROXY_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/proxy_ipv6_list.txt")
@@ -863,7 +862,7 @@ init_force_proxy_ipv6() {
 }
 
 init_pass_ip_bypass() {
-  log_info "INIT PASS_IP BYPASS"
+  log_info "init_fw pass_ip_bypass"
   nft add set inet nftclash pass_ip { type ipv4_addr\; flags interval\; } && \
   nft add rule inet nftclash prerouting ip daddr @pass_ip return && \
   nft add rule inet nftclash prerouting_nat ip daddr @pass_ip return
@@ -874,7 +873,7 @@ init_pass_ip_bypass() {
 }
 
 init_pass_ipv6_bypass() {
-  log_info "INIT PASS_IP6 BYPASS"
+  log_info "init_fw pass_ipv6_bypass"
   nft add set inet nftclash pass_ip6 { type ipv6_addr\; flags interval\; } && \
   nft add rule inet nftclash prerouting ip6 daddr @pass_ip6 return && \
   nft add rule inet nftclash prerouting_nat ip6 daddr @pass_ip6 return
@@ -887,7 +886,7 @@ init_pass_ipv6_bypass() {
 init_cn_ip_bypass() {
   if [ -e "$DIR/ipset/china_ip_list.txt" ]; then
     if [ -n "$(grep -v '^$' "$DIR/ipset/china_ip_list.txt")" ]; then
-      log_info "INIT CN_IP BYPASS"
+      log_info "init_fw cn_ip_bypass"
       CN_IP=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ip_list.txt")
       nft add element inet nftclash cn_ip {$CN_IP}
     else
@@ -904,7 +903,7 @@ init_cn_ip_bypass() {
 init_cn_ipv6_bypass() {
   if [ -e "$DIR/ipset/china_ipv6_list.txt" ]; then
     if [ -n "$(grep -v '^$' "$DIR/ipset/china_ipv6_list.txt")" ]; then
-      log_info "INIT CN_IP6 BYPASS"
+      log_info "init_fw cn_ipv6_bypass"
       CN_IP6=$(awk '{printf "%s, ",$1}' "$DIR/ipset/china_ipv6_list.txt")
       nft add element inet nftclash cn_ip6 {$CN_IP6}
     else
@@ -994,7 +993,7 @@ init_fw_dns() {
   dns_listen_port=$(echo $clash_dns_listen | cut -d ":" -f 2)
   if [ "$clash_dns_enabled" = "true" ]; then
     if [ -z "$dns_listen_ip" ] || [ "$dns_listen_ip" == "0.0.0.0" ]; then
-      log_info "INIT DNS_REDIRECT"
+      log_info "init_fw_dns dns_redirect"
       nft add chain inet nftclash dns { type nat hook prerouting priority -100 \; }
       case $MAC_LIST_MODE in
       1)  # White List Mode
@@ -1043,7 +1042,7 @@ init_fw() {
   loopback_check
 
   # Transparent proxy chain
-  log_info "INIT TPROXY CHAIN"
+  log_info "init_fw transparent_proxy"
   nft add chain inet nftclash transparent_proxy
   init_tproxy
 
@@ -1051,14 +1050,14 @@ init_fw() {
   init_mac_list
 
   # Force proxy chain
-  log_info "INIT FORCE PROXY CHAIN"
+  log_info "init_fw force_proxy"
   nft add chain inet nftclash force_proxy
   nft add rule inet nftclash prerouting jump force_proxy
   nft add rule inet nftclash prerouting_nat jump force_proxy
   init_proxy_list
 
   # Bypass proxy chain
-  log_info "INIT BYPASS PROXY CHAIN"
+  log_info "init_fw bypass_proxy"
   nft add chain inet nftclash bypass_proxy
   nft add rule inet nftclash prerouting jump bypass_proxy
   nft add rule inet nftclash prerouting_nat jump bypass_proxy
@@ -1102,7 +1101,7 @@ init_fw() {
 
   [ "$DNS_REDIRECT" = 1 ] && init_fw_dns
 
-  log_info "INIT LOCAL_PROXY"
+  log_info "init_fw local_proxy"
 
   # Local Proxy
   nft add chain inet nftclash output { type nat hook output priority -100 \; }
@@ -1147,7 +1146,6 @@ init_fw() {
 
   [ "$REJECT_QUIC" = 1 ] && nft add rule inet nftclash output udp dport { 443, 8443 } reject
   nft add rule inet nftclash output meta l4proto tcp mark set $fwmark redirect to $redir_port
-  log_info "INIT FIREWALL_RULES DONE!"
 }
 
 init_tproxy() {
@@ -1179,7 +1177,6 @@ init_startup() {
   if [ -e "$CLASH_HOME_DIR/clash" ]; then
     if [ -e "$CLASH_HOME_DIR/config.yaml" ]; then
       chmod 777 -R "$DIR"
-      log_info "INIT STARTUP DONE!"
     else
       log_warn "Please manually move the clash config file to $CLASH_HOME_DIR/config.yaml"
       return 1
@@ -1230,7 +1227,6 @@ init_started() {
   log_info "${GREEN}API_URL: ${NOCOLOR}http://[${HOST_IPV6}]:${CLASH_API_PORT}"
   [ "$INIT_CHECKS_ENABLED" = 0 ] && {
     init_fw
-    log_info "CLASH SERVICE STARTED"
     CLASH_API_READY=1
   }
   return 0
@@ -1245,7 +1241,6 @@ init_check() {
         if [ $? -eq 0 ]; then
           CHECK_FAILURE=0
           init_fw
-          log_info "CLASH SERVICE STARTED"
           CLASH_API_READY=1
           break
         fi
