@@ -12,5 +12,7 @@ cp $DIR/install/nftclashservice /etc/init.d/nftclash && chmod 755 /etc/init.d/nf
 cp $DIR/install/hotplug /etc/hotplug.d/iface/21-nftclash && chmod 755 /etc/hotplug.d/iface/21-nftclash
 [ ! -f "$DIR/version" ] && cp $DIR/install/version $DIR/version
 
-[ -f "$DIR/config.cfg.bak" ] && rm $DIR/config.cfg.bak
-$DIR/service.sh update_config
+if [ "$1" = "upgrade" ]; then
+	[ -f "$DIR/config.cfg.bak" ] && rm $DIR/config.cfg.bak
+	$DIR/service.sh update_config
+fi
