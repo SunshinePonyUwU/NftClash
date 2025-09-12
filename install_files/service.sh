@@ -1256,7 +1256,7 @@ init_check() {
         sleep 1
     done
     if [ "$CHECK_FAILURE" = 1 ];then
-      log_error "CLASH TIMEDOUT!!!"
+      log_error "clash api timedout!!!"
       return 1
     fi
   }
