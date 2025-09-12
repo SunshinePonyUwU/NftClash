@@ -141,9 +141,8 @@ init_config() {
   if [ -e "$CONFIG_PATH" ]; then
     source $CONFIG_PATH
   else
-    echo "Creating config.cfg"
+    echo "Generating config"
     touch $CONFIG_PATH
-    echo "Generating default config"
     set_config FILES_REPO_URL $FILES_REPO_URL
     set_config REPO_URL $REPO_URL
     set_config BYPASS_SOURCE_PORT_ENABLED $BYPASS_SOURCE_PORT_ENABLED
