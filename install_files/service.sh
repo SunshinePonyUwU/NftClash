@@ -556,7 +556,7 @@ check_update() {
         [ "$download_code_service_sh" = 0 ] &&\
         [ "$download_code_version" = 0 ] && {
           chmod 777 -R "$DIR/install/"
-          $DIR/install/install.sh
+          $DIR/install/install.sh upgrade
           local VERSION_SERVICE=0
           source "$DIR/install/version"
           set_config VERSION_SERVICE "$VERSION_SERVICE" "$VERSION_PATH"
