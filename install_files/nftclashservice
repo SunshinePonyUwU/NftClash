@@ -25,12 +25,12 @@ start_service() {
 	ENV_SKIP_SYSTEM_IPV6_CHECK=$(cat "$DIR/env/SKIP_SYSTEM_IPV6_CHECK")
 	ENV_SKIP_SAFE_PATH_CHECK=$(cat "$DIR/env/SKIP_SAFE_PATH_CHECK")
 	ENV_SAFE_PATHS=$(cat "$DIR/env/SAFE_PATHS")
-	CLASH_LOG_STD=0
+	CLASH_LOG_STDOUT=0
 	source $CONFIG_PATH
 	procd_open_instance
 	procd_set_param respawn
-	procd_set_param stderr $CLASH_LOG_STD
-	procd_set_param stdout $CLASH_LOG_STD
+	procd_set_param stderr $CLASH_LOG_STDOUT
+	procd_set_param stdout $CLASH_LOG_STDOUT
 	procd_set_param env \
 	DISABLE_EMBED_CA=$ENV_DISABLE_EMBED_CA \
 	DISABLE_SYSTEM_CA=$ENV_DISABLE_SYSTEM_CA \

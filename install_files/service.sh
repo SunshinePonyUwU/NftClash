@@ -96,7 +96,11 @@ set_config() {
 }
 
 init_config() {
+  local arg1=$1
+
+  # DEFAULT HIDDEN CONFIGS
   DNS_REDIRECT=0
+  # DEFAULT CONFIGS
   BYPASS_SOURCE_PORT_ENABLED=0
   BYPASS_SOURCE_PORT_LIST="0-1023"
   BYPASS_DEST_PORT_ENABLED=1
@@ -127,7 +131,12 @@ init_config() {
   CLASH_CONFIG_UPDATE_ENABLED=0
   CLASH_CONFIG_UPDATE_URL=""
   CLASH_CONFIG_UPDATE_UA=""
-  CLASH_LOG_STD=0
+  CLASH_LOG_STDOUT=0
+
+  if [ "$arg1" = "update" ]; then
+    source $CONFIG_PATH
+    mv "$CONFIG_PATH" "$CONFIG_PATH.bak" || return 1
+  fi
 
   if [ -e "$CONFIG_PATH" ]; then
     source $CONFIG_PATH
@@ -135,7 +144,8 @@ init_config() {
     echo "Creating config.cfg"
     touch $CONFIG_PATH
     echo "Generating default config"
-    set_config DNS_REDIRECT $DNS_REDIRECT
+    set_config FILES_REPO_URL $FILES_REPO_URL
+    set_config REPO_URL $REPO_URL
     set_config BYPASS_SOURCE_PORT_ENABLED $BYPASS_SOURCE_PORT_ENABLED
     set_config BYPASS_SOURCE_PORT_LIST $BYPASS_SOURCE_PORT_LIST
     set_config BYPASS_DEST_PORT_ENABLED $BYPASS_DEST_PORT_ENABLED
@@ -165,8 +175,7 @@ init_config() {
     set_config CLASH_CONFIG_UPDATE_ENABLED $CLASH_CONFIG_UPDATE_ENABLED
     set_config CLASH_CONFIG_UPDATE_URL $CLASH_CONFIG_UPDATE_URL
     set_config CLASH_CONFIG_UPDATE_UA $CLASH_CONFIG_UPDATE_UA
-    set_config CLASH_LOG_STD $CLASH_LOG_STD
-    source $CONFIG_PATH
+    set_config CLASH_LOG_STDOUT $CLASH_LOG_STDOUT
   fi
 
   get_clash_config tproxy_port tproxy-port
@@ -1315,6 +1324,9 @@ case "$1" in
     ;;
   set_conf)
     set_conf $2 $3 $4
+    ;;
+  update_config)
+    init_config update
     ;;
   hotplug)
     log_info "hotplug: $2 ($3)"
