@@ -350,19 +350,6 @@ set_conf() {
   fi
 }
 
-set_conf_force() {
-  conf_name="$1"
-  conf_value_new="$2"
-  [ -z "$conf_name" ] && log_error "missing argument." && return 1
-  eval "conf_value=\"\${$conf_name}\""
-  if [ -n "$conf_value_new" ]; then
-    set_config $conf_name $conf_value_new && \
-    log_info "SET CONFIG $conf_name=$conf_value_new DONE!"
-  else
-    log_error "new value is not defined."
-  fi
-}
-
 # LINK, PATH, UA
 download_file() {
   local link=$1
