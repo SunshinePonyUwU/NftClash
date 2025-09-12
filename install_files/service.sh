@@ -53,7 +53,7 @@ log() {
       ;;
   esac
 
-  logger -t "$LOGTAG" -p "$priority" "[$level_text] $msg"
+  logger -t "$LOGTAG" -p "$priority" "$msg"
 }
 
 log_notice() {
