@@ -295,12 +295,12 @@ connection_check() {
             CHECK_SUCCESS_COUNT=$(( CHECK_SUCCESS_COUNT + 1 ))
             if [ "$CHECK_SUCCESS_COUNT" -ge "$CONN_CHECKS_MIN_SUCCESSES" ]; then
               init_tproxy
-              log_info "socks5 test success, init tproxy. (x$CHECK_SUCCESS_COUNT)"
+              log_info "connection_check socks5 test success, init tproxy. (x$CHECK_SUCCESS_COUNT)"
               CHECK_FAILURE=0
               CHECK_SUCCESS=1
               RETRYING=0
             else
-              log_info "socks5 test success. (x$CHECK_SUCCESS_COUNT)"
+              log_info "connection_check socks5 test success. (x$CHECK_SUCCESS_COUNT)"
               RETRYING=1
             fi
           }
@@ -310,12 +310,12 @@ connection_check() {
             CHECK_FAILURE_COUNT=$(( CHECK_FAILURE_COUNT + 1 ))
             if [ "$CHECK_FAILURE_COUNT" -ge "$CONN_CHECKS_MAX_FAILURES" ]; then
               flush_tproxy
-              log_warn "socks5 test failure, flush tproxy. (x$CHECK_FAILURE_COUNT)"
+              log_warn "connection_check socks5 test failure, flush tproxy. (x$CHECK_FAILURE_COUNT)"
               CHECK_FAILURE=1
               CHECK_SUCCESS=0
               RETRYING=1
             else
-              log_warn "socks5 test failure. (x$CHECK_FAILURE_COUNT)"
+              log_warn "connection_check socks5 test failure. (x$CHECK_FAILURE_COUNT)"
               RETRYING=1
             fi
           }
