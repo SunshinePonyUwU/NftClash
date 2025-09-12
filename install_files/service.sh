@@ -277,6 +277,7 @@ loopback_check() {
 }
 
 connection_check() {
+  [ "$INIT_CHECKS_ENABLED" = 0 ] && return 0
   [ "$CONN_CHECKS_ENABLED" = 1 ] && {
     local CHECK_FAILURE=0
     local CHECK_FAILURE_COUNT=0
@@ -286,7 +287,7 @@ connection_check() {
     while true; do
       local is_tproxy_chain_initialized=$(nft -j list chain inet nftclash transparent_proxy 2> /dev/null | jq -e '.nftables | map(select(.rule)) | length != 0')
 
-      if [ "$CLASH_API_READY" = 1 ] || [ "$INIT_CHECKS_ENABLED" = 0 ]; then
+      if [ "$CLASH_API_READY" = 1 ]; then
         curl -x "socks5://127.0.0.1:$socks_port" -s "$CONN_CHECKS_URL"&> /dev/null
         if [ $? -eq 0 ]; then
           CHECK_FAILURE_COUNT=0
