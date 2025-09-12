@@ -440,7 +440,7 @@ silent_update_china_iplist() {
 reload_clash_config() {
   local arg1=$1
   clash_api_fetch PUT "configs?force=true" "{\"path\":\"\",\"payload\":\"\"}" && \
-  [ "$arg1" = "close-conns" ] && clash_api_fetch DELETE connections
+  [ "$arg1" = "force" ] && clash_api_fetch DELETE connections
   return 0
 }
 
@@ -1281,10 +1281,7 @@ case "$1" in
     ;;
   flush_tproxy)
     flush_tproxy
-    ;;
-  force_flush_tproxy)
-    flush_tproxy
-    clash_api_fetch DELETE connections
+    [ "$2" = "force" ] && clash_api_fetch DELETE connections
     ;;
   check_update)
     check_update $2
