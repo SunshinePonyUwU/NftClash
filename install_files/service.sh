@@ -405,6 +405,10 @@ fetch_repo(){
   curl -s "$REPO_URL$1"
 }
 
+fetch(){
+  curl -s "$1"
+}
+
 clash_api_fetch() {
   local fetch_method=$1
   local fetch_path=$2
@@ -611,13 +615,6 @@ check_update() {
       fi
     fi
   fi
-}
-
-dl_clash_bin() {
-  [ -f "$CLASH_HOME_DIR/clash" ] && {
-    log_notice "the clash binary file already exists"
-    log_notice $($CLASH_HOME_DIR/clash -v)
-  }
 }
 
 download_china_ip_list() {
@@ -1333,9 +1330,6 @@ case "$1" in
   silent_update)
     silent_update_china_iplist
     silent_update_clash_config
-    ;;
-  dl_clash)
-    dl_clash_bin
     ;;
   get_conf)
     get_conf $2
