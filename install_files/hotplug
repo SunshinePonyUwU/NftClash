@@ -1,5 +1,5 @@
 #!/bin/sh
 
-DIR=/etc/nftclash
 /etc/init.d/nftclash running || exit 0
+DIR=/etc/nftclash
 $DIR/service.sh hotplug $INTERFACE $ACTION
