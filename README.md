@@ -38,83 +38,83 @@ chmod +x -R /etc/nftclash
 - 下载文件名格式为 <u>mihomo-linux-xxxx-compatible-xxxx.gz</u> 二进制压缩包
 - 解压后将二进制文件移动到 /etc/nftclash/clash/clash
 
-99.执行以下命令启动服务  
+6.手动放置Clash配置文件  
+_(不建议直接使用机场提供的配置文件)_  
+7.执行以下命令启动服务  
 ```shell
 service nftclash start
 ```
 
-放置可執行文件：
+检查脚本或CNIP更新
 --
-1. 前往[Mihomo發佈頁](https://wiki.metacubex.one/startup/#__tabbed_1_2)下載你對應平臺的可執行文件  
-文件名格式：<u>mihomo-linux-(你的CPU架構)-compatible-xxxx.gz</u>  
-2. 重命名文件為"clash"  
-3. 移動文件到 /etc/nftclash/clash/ 文件夾内 (如果文件夾不存在請手動創建)  
-
-檢查更新：
---
-CHINA IP LIST 更新后無需重啓立即生效
+_CHINA IP LIST 更新后会立即生效，无需重启clash服务_
 ```shell
 /etc/nftclash/service.sh check_update
 ```
-熱更新clash配置文件(如果設置了的話)
+更新clash配置文件  
+_(需设置CLASH_CONFIG_UPDATE)_  
 ```shell
 /etc/nftclash/service.sh update_clash_config
 ```
-手動設置計劃任務示例：每天早上八點執行
+计划任务示例:  
+每天早上八點執行  
 ```shell
 0 8 * * * pgrep clash && /etc/nftclash/service.sh silent_update
 ```
-更新CHINA IP LIST和Clash配置文件(如果設置了的話)
+静默更新CHINA IP LIST和clash配置文件
 ```shell
 /etc/nftclash/service.sh silent_update
 ```
-熱更新CHINA IP LIST
+静默更新CHINA IP LIST
 ```shell
 /etc/nftclash/service.sh silent_update_china_iplist
 ```
-熱更新clash配置文件(如果設置了的話)
+静默更新clash配置文件
 ```shell
 /etc/nftclash/service.sh silent_update_clash_config
 ```
 
 
-功能配置：
+nftclash服务配置：
 --
-| 選項 | 默認值 | 可接受的值 | 描述 |
+| 配置选项 | 默认值 | 可接受的值 | 配置描述 |
 | :- | :- | :- | :- |
-| DNS_REDIRECT | 0 | 0,1 | 啓用DNS重定向 |
-| BYPASS_SOURCE_PORT_ENABLED | 0 | 0,0 | 繞過指來源標端口 |
-| BYPASS_SOURCE_PORT_LIST | "0-1023,8000-8880" | "PORT,PORT,PORT,..." | 來源端口列表 |
-| BYPASS_DEST_PORT_ENABLED | 0 | 0,0 | 繞過指定目標端口 |
-| BYPASS_DEST_PORT_LIST | "123,3478-3479" | "PORT,PORT,PORT,..." | 目標端口列表 |
-| PROXY_COMMON_PORT_ENABLED | 0 | 0,1 | 僅代理常用端口 |
+| BYPASS_SOURCE_PORT_ENABLED | 0 | 0,1 | 绕过指定的源端口 |
+| BYPASS_SOURCE_PORT_LIST | "0-1023,8000-8880" | "PORT,PORT,PORT,..." | 源端口列表 |
+| BYPASS_DEST_PORT_ENABLED | 0 | 0,1 | 绕过指定的目标端口 |
+| BYPASS_DEST_PORT_LIST | "123,3478-3479" | "PORT,PORT,PORT,..." | 目标端口列表 |
+| PROXY_COMMON_PORT_ENABLED | 0 | 0,1 | 仅代理常用端口 |
 | PROXY_COMMON_PORT_LIST | "22,53,80,..." | "PORT,PORT,PORT,..." | 常用端口列表 |
-| PROXY_COMMON_PORT_MAC_LIST_ENABLED | 0 | 0,1 | 僅應用常用端口代理到MAC列表 |
-| BYPASS_CN_IP_ENABLED | 1 | 0,1 | 啓用繞過中國大陸IP |
-| BYPASS_PASS_IP_ENABLED | 1 | 0,1 | 啓用繞過指定IP |
-| FORCE_PROXY_IP_ENABLED | 1 | 0,1 | 啓用代理指定IP |
-| SOURCE_IP_LIST_MODE | 0 | 0,1,2 | 0:禁用功能,1:源IP白名單模式,2:源IP黑名單模式 |
-| MAC_LIST_MODE | 0 | 0,1,2 | 0:禁用功能,1:MAC白名單模式,2:MAC黑名單模式 |
-| LOCAL_PROXY_IPV6 | 0 | 0,1 | 是否代理本機IPV6，不建議在未使用NAT66的情況下啓用 |
-| LOCAL_PROXY_BYPASS_53 | 0 | 0,1 | 本地代理繞過DNS (TCP) |
-| BYPASS_53_TCP | 0 | 0,1 | 不代理DNS (TCP) |
-| BYPASS_53_UDP | 0 | 0,1 | 不代理DNS (UDP) |
-| REJECT_QUIC | 0 | 0,1 | 丟棄QUIC協議數據包 |
-| ICMP_REDIRECT | 0 | 0,1 | 將ICMP重定向到本機 |
-| INIT_CHECKS_ENABLED | 1 | 0,1 | 啓動前檢查，避免出現clash還沒啓動完成的時候無法訪問互聯網 |
-| CLASH_CONFIG_UPDATE_ENABLED | 0 | 0,1 | 是否更新clash配置文件 |
-| CLASH_CONFIG_UPDATE_URL | "" | (URL) | 下載clash配置文件的鏈接 |
-| CLASH_CONFIG_UPDATE_UA | "" | (UA) | 下載clash配置文件時使用的UA |
+| PROXY_COMMON_PORT_LOCAL_ENABLED | 0 | 0,1 | 本机代理仅代理常用端口 |
+| PROXY_COMMON_PORT_MAC_LIST_ENABLED | 0 | 0,1 | 常用端口代理仅对MAC列表生效 |
+| BYPASS_CN_IP_ENABLED | 1 | 0,1 | 启用绕过中国大陆IP |
+| BYPASS_PASS_IP_ENABLED | 1 | 0,1 | 启用绕过指定IP |
+| FORCE_PROXY_IP_ENABLED | 1 | 0,1 | 启用代理指定IP |
+| SOURCE_IP_LIST_MODE | 0 | 0,1,2 | 0:禁用,1:源IP白名单,2:源IP黑名单 |
+| MAC_LIST_MODE | 0 | 0,1,2 | 0:禁用,1:MAC白名单,2:MAC黑名单 |
+| LOCAL_PROXY_IPV6 | 0 | 0,1 | 本机代理代理IPv6 |
+| LOCAL_PROXY_BYPASS_53 | 0 | 0,1 | 本机代理绕过TCP53端口 |
+| BYPASS_53_TCP | 0 | 0,1 | 不代理TCP DNS |
+| BYPASS_53_UDP | 0 | 0,1 | 不代理UDP DNS |
+| REJECT_QUIC | 0 | 0,1 | 丢弃QUIC数据包 |
+| ICMP_REDIRECT | 0 | 0,1 | 重定向ICMP (PING) |
+| LOOPBACK_CHECKS_ENABLED | 1 | 0,1 | 启用环回检查 |
+| INIT_CHECKS_ENABLED | 1 | 0,1 | 初始化检查，可以避免clash未启动完成时短暂断网 |
+| CONN_CHECKS_ENABLED | 1 | 0,1 | 连接检查，服务启动后连接测试失败就清除透明代理规则 |
+| CONN_CHECKS_FORCE | 0 | 0,1 | 连接检查清除规则时同时关闭已有连接 |
+| CONN_CHECKS_INTERVAL | 300 | int | 连接检查间隔 |
+| CONN_CHECKS_RETRY_INTERVAL | 8 | int | 连接检查重试间隔 |
+| CONN_CHECKS_MAX_FAILURES | 5 | int | 连接检查允许的最大失败次数 |
+| CONN_CHECKS_MIN_SUCCESSES | 5 | int | 连接检查允许的最下成功次数 |
+| CONN_CHECKS_URL | http://cp.cloudflare.com/ | (URL) | 连接检查的URL |
+| CLASH_CONFIG_UPDATE_ENABLED | 0 | 0,1 | 启用clash配置文件更新 |
+| CLASH_CONFIG_UPDATE_URL | "" | (URL) | clash配置文件下载连接 |
+| CLASH_CONFIG_UPDATE_UA | "" | (UA) | 更新clash配置文件的User-Agent |
+| CLASH_LOG_STDOUT | 0 | 0,1 | 是否把clash输出打印到系统日志 |
+修改配置后使用以下命令更新防火墙规则
 ```shell
-/etc/nftclash/service.sh reinit_fw
+service nftclash reload_fw
 ```
-修改配置文件後可以使用此命令直接刷新防火牆規則
 
-DNS配置：
---
-#### 如果你需要使用dnsmasq作爲默認dns
-1.關閉DNS_REDIRECT  
-2.在 網絡 -> DHCP/DNS -> HOSTS和解析文件 中勾選 忽略解析文件  
-3.在 網絡 -> DHCP/DNS -> 常規設置 中設置 DNS 轉發 填寫 127.0.0.1:1053 。(1053是你配置文件中填寫的dns端口)  
-這個方法會把dnsmasq的上游設置成Clash DNS，但是會讓局域網内所有客戶端都使用Clash DNS  
-如果你使用黑白名單模式建議不要使用此方法
+不建议使用Clash的DNS作为路由器代理的DNS服务器  
+我们更建议单独配置mosdns作为DNS  
