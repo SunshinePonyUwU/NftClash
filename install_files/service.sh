@@ -1271,6 +1271,7 @@ init_check() {
 }
 
 flush_tproxy() {
+  log_info "flush_tproxy"
   if nft -j list chain inet nftclash transparent_proxy 2> /dev/null | \
      jq -e '.nftables | map(select(.rule)) | length != 0' >/dev/null;
   then
@@ -1279,6 +1280,7 @@ flush_tproxy() {
 }
 
 flush_fw() {
+  log_info "flush_fw"
   nft list table inet nftclash&> /dev/null && {
     nft flush table inet nftclash
     nft delete table inet nftclash
