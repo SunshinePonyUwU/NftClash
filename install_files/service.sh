@@ -1164,6 +1164,7 @@ init_fw() {
 }
 
 init_tproxy() {
+  log_info "init_fw tproxy"
   if nft -j list chain inet nftclash transparent_proxy 2> /dev/null | \
      jq -e '.nftables | map(select(.rule)) | length == 0' >/dev/null;
   then
