@@ -1057,7 +1057,6 @@ init_fw() {
   loopback_check
 
   # Transparent proxy chain
-  log_info "init_fw transparent_proxy"
   nft add chain inet nftclash transparent_proxy
   init_tproxy
 
