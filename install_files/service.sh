@@ -613,6 +613,13 @@ check_update() {
   fi
 }
 
+dl_clash_bin() {
+  [ -f "$CLASH_HOME_DIR/clash" ] && {
+    log_notice "the clash binary file already exists"
+    log_notice $($CLASH_HOME_DIR/clash -v)
+  }
+}
+
 download_china_ip_list() {
   test=1
   while [ -z "$can_reach_files_repo" -a "$test" -lt 30 ];do
@@ -1326,6 +1333,9 @@ case "$1" in
   silent_update)
     silent_update_china_iplist
     silent_update_clash_config
+    ;;
+  dl_clash)
+    dl_clash_bin
     ;;
   get_conf)
     get_conf $2
