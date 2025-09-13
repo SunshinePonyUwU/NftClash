@@ -133,6 +133,7 @@ init_config() {
   LOOPBACK_CHECKS_ENABLED=1
   INIT_CHECKS_ENABLED=1
   CONN_CHECKS_ENABLED=1
+  CONN_CHECKS_FORCE=0
   CONN_CHECKS_INTERVAL=300
   CONN_CHECKS_RETRY_INTERVAL=8
   CONN_CHECKS_MAX_FAILURES=5
@@ -176,6 +177,7 @@ init_config() {
     set_config ICMP_REDIRECT $ICMP_REDIRECT
     set_config INIT_CHECKS_ENABLED $INIT_CHECKS_ENABLED
     set_config CONN_CHECKS_ENABLED $CONN_CHECKS_ENABLED
+    set_config CONN_CHECKS_FORCE $CONN_CHECKS_FORCE
     set_config CONN_CHECKS_INTERVAL $CONN_CHECKS_INTERVAL
     set_config CONN_CHECKS_RETRY_INTERVAL $CONN_CHECKS_RETRY_INTERVAL
     set_config CONN_CHECKS_MAX_FAILURES $CONN_CHECKS_MAX_FAILURES
@@ -321,6 +323,7 @@ connection_check() {
             if [ "$CHECK_FAILURE_COUNT" -ge "$CONN_CHECKS_MAX_FAILURES" ]; then
               flush_tproxy
               log_warn "connection_check socks5 test failure, flush tproxy (x$CHECK_FAILURE_COUNT)"
+              [ "$CONN_CHECKS_FORCE" = 1 ] && clash_api_fetch DELETE connections
               CHECK_FAILURE=1
               CHECK_SUCCESS=0
               RETRYING=1
