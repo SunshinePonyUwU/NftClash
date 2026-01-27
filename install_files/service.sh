@@ -222,6 +222,7 @@ init_clash_api() {
 }
 
 loopback_check() {
+  local check_stage="$1"
   local wan_zone_section=$(uci show firewall | grep -E "(@zone\[[0-9]+\]|@zone\[[a-zA-Z0-9_]+\])\.name='wan'" | cut -d'=' -f1 | cut -d'.' -f1-2)
   [ -z "$wan_zone_section" ] && {
     log_error "firewall zone 'wan' is net exist!!!"
@@ -285,6 +286,10 @@ loopback_check() {
     nft flush set inet nftclash loopback_ipv6_list
     [ -n "$ipv6_addr_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_addr_list}
     [ -n "$ipv6_prefix_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_prefix_list}
+    if [ $check_stage = "hotplug" ]; then
+      flush_fw
+      init_fw
+    fi
   }
 }
 
@@ -1054,7 +1059,7 @@ init_fw() {
   nft add rule inet nftclash prerouting ip6 daddr @loopback_ipv6_list return
   nft add rule inet nftclash prerouting_nat ip6 daddr @loopback_ipv6_list return
 
-  loopback_check
+  loopback_check init_fw
 
   # Transparent proxy chain
   nft add chain inet nftclash transparent_proxy
@@ -1344,7 +1349,7 @@ case "$1" in
     ;;
   hotplug)
     log_info "hotplug: $2 ($3)"
-    loopback_check
+    loopback_check hotplug
     ;;
   conn_check)
     CLASH_API_READY=1
