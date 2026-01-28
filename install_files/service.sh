@@ -670,23 +670,23 @@ update_china_iplist_version() {
 process_proxy_fw_rules() {
   file="$1"
   rule="$2"
-  for line in $(cat $file); do
-    line=$(echo "$line" | tr -d '\r' | tr -d '\n')
+  while read -r line || [ -n "$line" ]; do
+    [ -z "$line" ] && continue
+    line=$(echo "$line" | tr -d '\r\n')
     ipv="ip"
     ipv6_prefix=0
     if echo "$line" | grep -q "\["; then
       ipv="ip6"
       ip=$(echo "$line" | sed -e 's/^\[\(.*\)\]:.*/\1/')
-      rest=$(echo "$line" | sed -e 's/^\[.*\]:\([0-9]*\)#\(.*\)/\1#\2/')
-      if echo "$ip" | grep -q "/::"; then
-        ipv6_prefix=1
-      fi
+      rest=$(echo "$line" | sed -e 's/^\[.*\]:\(.*\)#.*/\1/')
+      [ "${ip#*/::}" != "$ip" ] && ipv6_prefix=1
     else
-      ip=$(echo "$line" | sed -e 's/^\([^:]*\):.*/\1/')
-      rest=$(echo "$line" | sed -e 's/^[^:]*:\([0-9]*\)#\(.*\)/\1#\2/')
+      ip=$(echo "$line" | cut -d':' -f1)
+      rest=$(echo "$line" | sed -e 's/^[^:]*:\(.*\)#.*/\1/')
     fi
-    port=$(echo "$rest" | cut -d'#' -f1)
-    protocol=$(echo "$rest" | cut -d'#' -f2 | awk '{print tolower($0)}')
+
+    port="$rest"
+    protocol=$(echo "$line" | cut -d'#' -f2 | awk '{print tolower($0)}')
 
     if [ "$ipv6_prefix" = 1 ]; then
       ip_part1=$(echo "$ip" | cut -d'/' -f1)
@@ -696,7 +696,7 @@ process_proxy_fw_rules() {
 
     [ "$rule" = "src" ] && nft add rule inet nftclash force_proxy $ipv saddr $ip $protocol sport $port jump transparent_proxy
     [ "$rule" = "dest" ] && nft add rule inet nftclash force_proxy $ipv daddr $ip $protocol dport $port jump transparent_proxy
-  done
+  done < "$file"
 }
 
 init_proxy_list() {
@@ -714,23 +714,23 @@ init_proxy_list() {
 process_bypass_fw_rules() {
   file="$1"
   rule="$2"
-  for line in $(cat $file); do
-    line=$(echo "$line" | tr -d '\r' | tr -d '\n')
+  while read -r line || [ -n "$line" ]; do
+    [ -z "$line" ] && continue
+    line=$(echo "$line" | tr -d '\r\n')
     ipv="ip"
     ipv6_prefix=0
     if echo "$line" | grep -q "\["; then
       ipv="ip6"
       ip=$(echo "$line" | sed -e 's/^\[\(.*\)\]:.*/\1/')
-      rest=$(echo "$line" | sed -e 's/^\[.*\]:\([0-9]*\)#\(.*\)/\1#\2/')
-      if echo "$ip" | grep -q "/::"; then
-        ipv6_prefix=1
-      fi
+      rest=$(echo "$line" | sed -e 's/^\[.*\]:\(.*\)#.*/\1/')
+      [ "${ip#*/::}" != "$ip" ] && ipv6_prefix=1
     else
-      ip=$(echo "$line" | sed -e 's/^\([^:]*\):.*/\1/')
-      rest=$(echo "$line" | sed -e 's/^[^:]*:\([0-9]*\)#\(.*\)/\1#\2/')
+      ip=$(echo "$line" | cut -d':' -f1)
+      rest=$(echo "$line" | sed -e 's/^[^:]*:\(.*\)#.*/\1/')
     fi
-    port=$(echo "$rest" | cut -d'#' -f1)
-    protocol=$(echo "$rest" | cut -d'#' -f2 | awk '{print tolower($0)}')
+
+    port="$rest"
+    protocol=$(echo "$line" | cut -d'#' -f2 | awk '{print tolower($0)}')
 
     if [ "$ipv6_prefix" = 1 ]; then
       ip_part1=$(echo "$ip" | cut -d'/' -f1)
@@ -740,7 +740,7 @@ process_bypass_fw_rules() {
 
     [ "$rule" = "src" ] && nft add rule inet nftclash bypass_proxy $ipv saddr $ip $protocol sport $port accept
     [ "$rule" = "dest" ] && nft add rule inet nftclash bypass_proxy $ipv daddr $ip $protocol dport $port accept
-  done
+  done < "$file"
 }
 
 init_bypass_list() {
