@@ -111,6 +111,9 @@ init_config() {
   # DEFAULT HIDDEN CONFIGS
   DNS_REDIRECT=0
   # DEFAULT CONFIGS
+  TPROXY_FWMARK=7890
+  BYPASS_FWMARK_ENABLED=0
+  BYPASS_FWMARK_LIST="0xffffffff"
   BYPASS_SOURCE_PORT_ENABLED=0
   BYPASS_SOURCE_PORT_LIST="0-1023"
   BYPASS_DEST_PORT_ENABLED=1
@@ -156,6 +159,9 @@ init_config() {
     touch $CONFIG_PATH
     set_config FILES_REPO_URL $FILES_REPO_URL
     set_config REPO_URL $REPO_URL
+    set_config TPROXY_FWMARK $TPROXY_FWMARK
+    set_config BYPASS_FWMARK_ENABLED $BYPASS_FWMARK_ENABLED
+    set_config BYPASS_FWMARK_LIST $BYPASS_FWMARK_LIST
     set_config BYPASS_SOURCE_PORT_ENABLED $BYPASS_SOURCE_PORT_ENABLED
     set_config BYPASS_SOURCE_PORT_LIST $BYPASS_SOURCE_PORT_LIST
     set_config BYPASS_DEST_PORT_ENABLED $BYPASS_DEST_PORT_ENABLED
@@ -197,7 +203,7 @@ init_config() {
     CONN_CHECKS_ENABLED=0
     log_error "Connection checks disabled! socks-port or mixed-port is not defined."
   }
-  fwmark=$redir_port
+  fwmark=$TPROXY_FWMARK
   get_clash_config clash_dns_enabled dns.enable
   get_clash_config clash_dns_listen dns.listen
 }
@@ -1082,6 +1088,13 @@ init_fw() {
   nft add rule inet nftclash prerouting_nat jump bypass_proxy
   init_bypass_list
 
+  [ "$BYPASS_FWMARK_ENABLED" = 1 ] && {
+    FWMARK_LIST=$(echo $BYPASS_FWMARK_LIST | sed 's/,/, /g')
+    [ -n "$FWMARK_LIST" ] && {
+      nft add rule inet nftclash prerouting meta mark {$FWMARK_LIST} return
+    }
+  }
+
   [ "$BYPASS_SOURCE_PORT_ENABLED" = 1 ] && {
     SOURCE_PORT_LIST=$(echo $BYPASS_SOURCE_PORT_LIST | sed 's/,/, /g')
     [ -n "$SOURCE_PORT_LIST" ] && {
@@ -1132,6 +1145,13 @@ init_fw() {
   nft add rule inet nftclash output ip6 daddr @loopback_ipv6_list return
 
   nft add rule inet nftclash output jump bypass_proxy
+
+  [ "$BYPASS_FWMARK_ENABLED" = 1 ] && {
+    FWMARK_LIST=$(echo $BYPASS_FWMARK_LIST | sed 's/,/, /g')
+    [ -n "$FWMARK_LIST" ] && {
+      nft add rule inet nftclash output meta mark {$FWMARK_LIST} return
+    }
+  }
 
   [ "$BYPASS_SOURCE_PORT_ENABLED" = 1 ] && {
     SOURCE_PORT_LIST=$(echo $BYPASS_SOURCE_PORT_LIST | sed 's/,/, /g')
