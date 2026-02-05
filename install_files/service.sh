@@ -292,10 +292,10 @@ loopback_check() {
     nft flush set inet nftclash loopback_ipv6_list
     [ -n "$ipv6_addr_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_addr_list}
     [ -n "$ipv6_prefix_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_prefix_list}
-    if [ $check_stage = "hotplug" ]; then
-      flush_fw
-      init_fw
-    fi
+    # if [ $check_stage = "hotplug" ]; then
+    #   flush_fw
+    #   init_fw
+    # fi
   }
 }
 
@@ -1020,7 +1020,7 @@ init_fw_dns() {
   if [ "$clash_dns_enabled" = "true" ]; then
     if [ -z "$dns_listen_ip" ] || [ "$dns_listen_ip" == "0.0.0.0" ]; then
       log_info "init_fw_dns dns_redirect"
-      nft add chain inet nftclash dns { type nat hook prerouting priority -100 \; }
+      nft add chain inet nftclash dns { type nat hook prerouting priority -170 \; }
       case $MAC_LIST_MODE in
       1)  # White List Mode
         nft add rule inet nftclash dns ether saddr != @ether_list return
@@ -1043,8 +1043,8 @@ init_fw_dns() {
 init_fw() {
   nft add table inet nftclash
   nft flush table inet nftclash
-  nft add chain inet nftclash prerouting { type filter hook prerouting priority -100 \; }
-  nft add chain inet nftclash prerouting_nat { type nat hook prerouting priority -110 \; }
+  nft add chain inet nftclash prerouting { type filter hook prerouting priority -170 \; }
+  nft add chain inet nftclash prerouting_nat { type nat hook prerouting priority -170 \; }
 
   ip rule add fwmark $fwmark table 100 2> /dev/null
   ip route add local default dev lo table 100 2> /dev/null
@@ -1136,7 +1136,7 @@ init_fw() {
   log_info "init_fw local_proxy"
 
   # Local Proxy
-  nft add chain inet nftclash output { type nat hook output priority -100 \; }
+  nft add chain inet nftclash output { type nat hook output priority -170 \; }
   nft add rule inet nftclash output meta skgid 7890 return
   nft add rule inet nftclash output ip daddr {$RESERVED_IP} return
   nft add rule inet nftclash output ip6 daddr {$RESERVED_IP6} return
