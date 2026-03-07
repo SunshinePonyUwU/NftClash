@@ -292,10 +292,10 @@ loopback_check() {
     nft flush set inet nftclash loopback_ipv6_list
     [ -n "$ipv6_addr_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_addr_list}
     [ -n "$ipv6_prefix_list" ] && nft add element inet nftclash loopback_ipv6_list {$ipv6_prefix_list}
-    # if [ $check_stage = "hotplug" ]; then
-    #   flush_fw
-    #   init_fw
-    # fi
+    if [ $check_stage = "hotplug" ]; then
+      flush_fw
+      init_fw
+    fi
   }
 }
 
