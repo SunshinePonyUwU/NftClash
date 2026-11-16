@@ -673,35 +673,86 @@ update_china_iplist_version() {
   set_config VERSION_CHINA_IPLIST "$latest_china_iplist_version" "$VERSION_PATH"
 }
 
+nft_addr() {
+  case "$1" in
+    */*)
+      _m=${1#*/}
+      case "$_m" in
+        *:*) printf '& %s == %s' "$_m" "${1%%/*}"; return 0 ;;
+      esac
+      ;;
+  esac
+  printf '%s' "$1"
+}
+
 process_proxy_fw_rules() {
   file="$1"
   rule="$2"
   while read -r line || [ -n "$line" ]; do
     [ -z "$line" ] && continue
     line=$(echo "$line" | tr -d '\r\n')
+    case "$line" in '#'*) continue ;; esac
     ipv="ip"
-    ipv6_prefix=0
     if echo "$line" | grep -q "\["; then
       ipv="ip6"
       ip=$(echo "$line" | sed -e 's/^\[\(.*\)\]:.*/\1/')
       rest=$(echo "$line" | sed -e 's/^\[.*\]:\(.*\)#.*/\1/')
-      [ "${ip#*/::}" != "$ip" ] && ipv6_prefix=1
     else
       ip=$(echo "$line" | cut -d':' -f1)
       rest=$(echo "$line" | sed -e 's/^[^:]*:\(.*\)#.*/\1/')
     fi
 
     port="$rest"
-    protocol=$(echo "$line" | cut -d'#' -f2 | awk '{print tolower($0)}')
+    protocol=$(echo "$line" | cut -d'#' -f2 | tr 'A-Z' 'a-z')
+    case "$protocol" in tcp | udp) ;; *) continue ;; esac
 
-    if [ "$ipv6_prefix" = 1 ]; then
-      ip_part1=$(echo "$ip" | cut -d'/' -f1)
-      ip_part2=$(echo "$ip" | cut -d'/' -f2)
-      ip="& $ip_part2 == $ip_part1"
-    fi
+    ip=$(nft_addr "$ip")
 
     [ "$rule" = "src" ] && nft add rule inet nftclash force_proxy $ipv saddr $ip $protocol sport $port jump transparent_proxy
     [ "$rule" = "dest" ] && nft add rule inet nftclash force_proxy $ipv daddr $ip $protocol dport $port jump transparent_proxy
+  done < "$file"
+}
+
+process_proxy_fw_ruleset() {
+  file="$1"
+  type="$2"
+  while read -r line || [ -n "$line" ]; do
+    [ -z "$line" ] && continue
+    line=$(echo "$line" | tr -d '\r\n')
+    case "$line" in '#'*) continue ;; esac
+    case "$line" in *'=>'*) ;; *) continue ;; esac
+
+    src=$(echo "$line" | sed -e 's/[[:space:]]*=>.*//')
+    dst=$(echo "$line" | sed -e 's/^.*=>[[:space:]]*//')
+
+    protocol=$(echo "$dst" | cut -d'#' -f2 | tr 'A-Z' 'a-z')
+    dst=$(echo "$dst" | cut -d'#' -f1)
+    case "$protocol" in tcp | udp) ;; *) continue ;; esac
+
+    port=-1
+    case "$dst" in
+      \[*\]:*) port=${dst##*:}; host=${dst%:*}; host=${host#\[}; host=${host%\]} ;;
+      *:*:*)   host=$dst ;;
+      *:*)     host=${dst%:*}; port=${dst##*:} ;;
+      *)       host=$dst ;;
+    esac
+    [ -n "$host" ] || continue
+
+    if [ "$port" = "-1" ]; then
+      portspec="meta l4proto $protocol"
+    else
+      portspec="$protocol dport $port"
+    fi
+
+    if [ "$type" = "ether" ]; then
+      case "$host" in *:*) fam=ip6 ;; *) fam=ip ;; esac
+      nft add rule inet nftclash force_proxy ether saddr "$src" \
+        $fam daddr $(nft_addr "$host") $portspec jump transparent_proxy
+    else
+      case "$src" in *:*) fam=ip6 ;; *) fam=ip ;; esac
+      nft add rule inet nftclash force_proxy $fam \
+        saddr $(nft_addr "$src") $fam daddr $(nft_addr "$host") $portspec jump transparent_proxy
+    fi
   done < "$file"
 }
 
@@ -715,6 +766,12 @@ init_proxy_list() {
   [ ! -e "$DIR/ruleset/dest_ipv6_proxy_list.txt" ] && touch "$DIR/ruleset/dest_ipv6_proxy_list.txt"
   process_proxy_fw_rules "$DIR/ruleset/dest_ipv4_proxy_list.txt" "dest"
   process_proxy_fw_rules "$DIR/ruleset/dest_ipv6_proxy_list.txt" "dest"
+  [ ! -e "$DIR/ruleset/ether_proxy_ruleset.txt" ] && touch "$DIR/ruleset/ether_proxy_ruleset.txt"
+  [ ! -e "$DIR/ruleset/ipv4_proxy_ruleset.txt" ] && touch "$DIR/ruleset/ipv4_proxy_ruleset.txt"
+  [ ! -e "$DIR/ruleset/ipv6_proxy_ruleset.txt" ] && touch "$DIR/ruleset/ipv6_proxy_ruleset.txt"
+  process_proxy_fw_ruleset "$DIR/ruleset/ether_proxy_ruleset.txt" "ether"
+  process_proxy_fw_ruleset "$DIR/ruleset/ipv4_proxy_ruleset.txt"
+  process_proxy_fw_ruleset "$DIR/ruleset/ipv6_proxy_ruleset.txt"
 }
 
 process_bypass_fw_rules() {
@@ -723,29 +780,68 @@ process_bypass_fw_rules() {
   while read -r line || [ -n "$line" ]; do
     [ -z "$line" ] && continue
     line=$(echo "$line" | tr -d '\r\n')
+    case "$line" in '#'*) continue ;; esac
     ipv="ip"
-    ipv6_prefix=0
     if echo "$line" | grep -q "\["; then
       ipv="ip6"
       ip=$(echo "$line" | sed -e 's/^\[\(.*\)\]:.*/\1/')
       rest=$(echo "$line" | sed -e 's/^\[.*\]:\(.*\)#.*/\1/')
-      [ "${ip#*/::}" != "$ip" ] && ipv6_prefix=1
     else
       ip=$(echo "$line" | cut -d':' -f1)
       rest=$(echo "$line" | sed -e 's/^[^:]*:\(.*\)#.*/\1/')
     fi
 
     port="$rest"
-    protocol=$(echo "$line" | cut -d'#' -f2 | awk '{print tolower($0)}')
+    protocol=$(echo "$line" | cut -d'#' -f2 | tr 'A-Z' 'a-z')
+    case "$protocol" in tcp | udp) ;; *) continue ;; esac
 
-    if [ "$ipv6_prefix" = 1 ]; then
-      ip_part1=$(echo "$ip" | cut -d'/' -f1)
-      ip_part2=$(echo "$ip" | cut -d'/' -f2)
-      ip="& $ip_part2 == $ip_part1"
-    fi
+    ip=$(nft_addr "$ip")
 
     [ "$rule" = "src" ] && nft add rule inet nftclash bypass_proxy $ipv saddr $ip $protocol sport $port accept
     [ "$rule" = "dest" ] && nft add rule inet nftclash bypass_proxy $ipv daddr $ip $protocol dport $port accept
+  done < "$file"
+}
+
+process_bypass_fw_ruleset() {
+  file="$1"
+  type="$2"
+  while read -r line || [ -n "$line" ]; do
+    [ -z "$line" ] && continue
+    line=$(echo "$line" | tr -d '\r\n')
+    case "$line" in '#'*) continue ;; esac
+    case "$line" in *'=>'*) ;; *) continue ;; esac
+
+    src=$(echo "$line" | sed -e 's/[[:space:]]*=>.*//')
+    dst=$(echo "$line" | sed -e 's/^.*=>[[:space:]]*//')
+
+    protocol=$(echo "$dst" | cut -d'#' -f2 | tr 'A-Z' 'a-z')
+    dst=$(echo "$dst" | cut -d'#' -f1)
+    case "$protocol" in tcp | udp) ;; *) continue ;; esac
+
+    port=-1
+    case "$dst" in
+      \[*\]:*) port=${dst##*:}; host=${dst%:*}; host=${host#\[}; host=${host%\]} ;;
+      *:*:*)   host=$dst ;;
+      *:*)     host=${dst%:*}; port=${dst##*:} ;;
+      *)       host=$dst ;;
+    esac
+    [ -n "$host" ] || continue
+
+    if [ "$port" = "-1" ]; then
+      portspec="meta l4proto $protocol"
+    else
+      portspec="$protocol dport $port"
+    fi
+
+    if [ "$type" = "ether" ]; then
+      case "$host" in *:*) fam=ip6 ;; *) fam=ip ;; esac
+      nft add rule inet nftclash bypass_proxy ether saddr "$src" \
+        $fam daddr $(nft_addr "$host") $portspec accept
+    else
+      case "$src" in *:*) fam=ip6 ;; *) fam=ip ;; esac
+      nft add rule inet nftclash bypass_proxy $fam \
+        saddr $(nft_addr "$src") $fam daddr $(nft_addr "$host") $portspec accept
+    fi
   done < "$file"
 }
 
@@ -759,6 +855,12 @@ init_bypass_list() {
   [ ! -e "$DIR/ruleset/dest_ipv6_bypass_list.txt" ] && touch "$DIR/ruleset/dest_ipv6_bypass_list.txt"
   process_bypass_fw_rules "$DIR/ruleset/dest_ipv4_bypass_list.txt" "dest"
   process_bypass_fw_rules "$DIR/ruleset/dest_ipv6_bypass_list.txt" "dest"
+  [ ! -e "$DIR/ruleset/ether_bypass_ruleset.txt" ] && touch "$DIR/ruleset/ether_bypass_ruleset.txt"
+  [ ! -e "$DIR/ruleset/ipv4_bypass_ruleset.txt" ] && touch "$DIR/ruleset/ipv4_bypass_ruleset.txt"
+  [ ! -e "$DIR/ruleset/ipv6_bypass_ruleset.txt" ] && touch "$DIR/ruleset/ipv6_bypass_ruleset.txt"
+  process_bypass_fw_ruleset "$DIR/ruleset/ether_bypass_ruleset.txt" "ether"
+  process_bypass_fw_ruleset "$DIR/ruleset/ipv4_bypass_ruleset.txt"
+  process_bypass_fw_ruleset "$DIR/ruleset/ipv6_bypass_ruleset.txt"
 }
 
 init_source_ip_list() {
