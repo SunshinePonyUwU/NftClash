@@ -111,10 +111,77 @@ nftclash服务配置：
 | CLASH_CONFIG_UPDATE_URL | "" | (URL) | clash配置文件下载连接 |
 | CLASH_CONFIG_UPDATE_UA | "" | (UA) | 更新clash配置文件的User-Agent |
 | CLASH_LOG_STDOUT | 0 | 0,1 | 是否把clash输出打印到系统日志 |
+
+## ruleset 配置文件示例  
+dest_ipv4_bypass_list.txt
+```txt
+# 1.1.1.1 的 TCP 和 UDP 端口 443 强制绕过内核
+1.1.1.1:443#TCP
+1.1.1.1:443#UDP
+```
+dest_ipv4_proxy_list.txt
+```txt
+# 1.1.1.2 的 TCP 和 UDP 端口 443 强制被内核代理
+1.1.1.2:443#TCP
+1.1.1.2:443#UDP
+```
+src_ipv4_bypass_list.txt
+```txt
+# 解决代理时入站超时
+# 192.168.1.100 的 TCP 端口 25565-25567 绕过内核
+192.168.1.100:25565-25567#TCP
+# 192.168.1.100 的 UDP 端口 19132-19134 绕过内核
+192.168.1.100:19132-19134#UDP
+```
+src_ipv4_proxy_list.txt
+```txt
+# 192.168.1.101 的 TCP 和 UDP 源端口 23333 强制被代理
+192.168.1.101:23333#TCP
+192.168.1.101:23333#UDP
+```
+dest_ipv6_bypass_list.txt
+```txt
+# 2606:4700:4700::1111 的 TCP 和 UDP 端口 443 强制绕过内核
+[2606:4700:4700::1111]:443#TCP
+[2606:4700:4700::1111]:443#UDP
+```
+dest_ipv6_proxy_list.txt
+```txt
+# 2606:4700:4700::1112 的 TCP 和 UDP 端口 443 强制被内核代理
+[2606:4700:4700::1112]:443#TCP
+[2606:4700:4700::1112]:443#UDP
+```
+
+src_ipv6_bypass_list.txt
+```txt
+# 解决代理时入站超时
+# fd23:4567:abcd::a3c 的 TCP 端口 25565-25567 绕过内核
+[fd23:4567:abcd::a3c]:25565-25567#TCP
+# fd23:4567:abcd::a3c 的 UDP 端口 19132-19134 绕过内核
+[fd23:4567:abcd::a3c]:19132-19134#UDP
+```
+src_ipv6_proxy_list.txt
+```txt
+# fd23:4567:abcd::be2 的 TCP 和 UDP 源端口 23333 强制被代理
+[fd23:4567:abcd::be2]:23333#TCP
+[fd23:4567:abcd::be2]:23333#UDP
+```
+
+## ruleset 高级配置文件示例  
+ether_bypass_ruleset.txt
+```txt
+# MAC 地址为 11:22:33:44:55:66 的设备请求 1.1.1.1 的 TCP 443 绕过内核
+11:22:33:44:55:66 => 1.1.1.1:443#TCP
+# MAC 地址为 11:22:33:44:55:66 的设备请求 1.1.1.2 的 TCP 绕过内核
+11:22:33:44:55:66 => 1.1.1.2:-1#TCP
+# 同时也可以支持 IPv6 写法
+11:22:33:44:55:66 => [2606:4700:4700::1112]:-1#TCP
+```
+
 修改配置后使用以下命令更新防火墙规则
 ```shell
 service nftclash reload_fw
 ```
 
 不建议使用Clash的DNS作为路由器代理的DNS服务器  
-我们更建议单独配置mosdns作为DNS  
+更建议单独配置mosdns作为内网DNS上游  
